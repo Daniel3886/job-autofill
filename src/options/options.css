@@ -51,7 +51,8 @@ label {
   font-weight: 600;
 }
 
-input {
+input,
+select {
   font: inherit;
   font-weight: 400;
   padding: 8px 10px;
@@ -61,7 +62,8 @@ input {
   color: inherit;
 }
 
-input:focus {
+input:focus,
+select:focus {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -84,4 +86,40 @@ button {
 
 button:disabled {
   opacity: 0.6;
+}
+
+fieldset {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 0;
+}
+
+legend {
+  font-weight: 700;
+  padding: 0 6px;
+}
+
+fieldset .hint {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+.choice {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+
+label.check input {
+  padding: 0;
 }

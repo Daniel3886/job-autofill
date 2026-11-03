@@ -1,5 +1,5 @@
 import { FIELD_RULES, type FieldRule } from "./fieldRules";
-import { readSignals, type InputSignals } from "./signals";
+import { readSignals, signalsQuestion, type InputSignals, type TextLike } from "./signals";
 import { containsPhrase } from "./text";
 
 // Points per signal. Stronger, more deliberate signals score higher.
@@ -18,9 +18,10 @@ export const WEIGHTS = {
 export const MIN_SCORE = 30;
 
 export interface Match {
-  input: HTMLInputElement;
+  element: TextLike;
   fieldId: FieldRule["id"];
   score: number;
+  question: string;
 }
 
 export function scoreField(s: InputSignals, rule: FieldRule): number {
@@ -41,23 +42,24 @@ export function scoreField(s: InputSignals, rule: FieldRule): number {
 
 // Scores every (input, field) pair, then assigns the best pairs first so each
 // input gets at most one field and each field fills at most one input.
-export function matchInputs(inputs: HTMLInputElement[], rules: FieldRule[] = FIELD_RULES): Match[] {
+export function matchInputs(inputs: TextLike[], rules: FieldRule[] = FIELD_RULES): Match[] {
   const candidates: Match[] = [];
-  for (const input of inputs) {
-    const signals = readSignals(input);
+  for (const element of inputs) {
+    const signals = readSignals(element);
+    const question = signalsQuestion(signals);
     for (const rule of rules) {
       const score = scoreField(signals, rule);
-      if (score >= MIN_SCORE) candidates.push({ input, fieldId: rule.id, score });
+      if (score >= MIN_SCORE) candidates.push({ element, fieldId: rule.id, score, question });
     }
   }
   candidates.sort((a, b) => b.score - a.score);
 
-  const usedInputs = new Set<HTMLInputElement>();
+  const usedInputs = new Set<TextLike>();
   const usedFields = new Set<string>();
   const matches: Match[] = [];
   for (const c of candidates) {
-    if (usedInputs.has(c.input) || usedFields.has(c.fieldId)) continue;
-    usedInputs.add(c.input);
+    if (usedInputs.has(c.element) || usedFields.has(c.fieldId)) continue;
+    usedInputs.add(c.element);
     usedFields.add(c.fieldId);
     matches.push(c);
   }

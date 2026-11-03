@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { collectFillableInputs, setInputValue } from "./fill";
+import { collectTextInputs, setTextValue } from "./drivers/text";
 import { matchInputs } from "./matcher";
 import { normalize } from "./text";
 
-function render(html: string): HTMLInputElement[] {
+function render(html: string): (HTMLInputElement | HTMLTextAreaElement)[] {
   document.body.innerHTML = html;
   // jsdom has no layout, so skip the visibility check in tests.
-  return collectFillableInputs(document, false);
+  return collectTextInputs(document, false);
 }
 
 function matchedIds(html: string): Record<string, string> {
   const result: Record<string, string> = {};
-  for (const m of matchInputs(render(html))) result[m.input.id || m.input.name] = m.fieldId;
+  for (const m of matchInputs(render(html))) result[m.element.id || m.element.name] = m.fieldId;
   return result;
 }
 
@@ -83,11 +83,11 @@ describe("matchInputs", () => {
         <label for="e2">Email</label><input id="e2">
       `),
     );
-    expect(matches.map((m) => m.input.id)).toEqual(["e1"]);
+    expect(matches.map((m) => m.element.id)).toEqual(["e1"]);
   });
 });
 
-describe("collectFillableInputs", () => {
+describe("collectTextInputs", () => {
   it("skips non-text, disabled, readonly and already-filled inputs", () => {
     const inputs = render(`
       <input id="ok">
@@ -101,13 +101,13 @@ describe("collectFillableInputs", () => {
   });
 });
 
-describe("setInputValue", () => {
+describe("setTextValue", () => {
   it("sets the value and fires input and change events", () => {
     const [input] = render(`<input id="a">`);
     const events: string[] = [];
     input.addEventListener("input", () => events.push("input"));
     input.addEventListener("change", () => events.push("change"));
-    setInputValue(input, "Daniel");
+    setTextValue(input, "Daniel");
     expect(input.value).toBe("Daniel");
     expect(events).toEqual(["input", "change"]);
   });
