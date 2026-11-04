@@ -1,9 +1,11 @@
 import { getList, getText, type Profile } from "../shared/profile";
+import { storedToFile, type StoredFile } from "../shared/files";
 import { TARGET_ATTR, type SelectizeInfo, type SelectizeSetItem } from "../shared/messages";
 import type { FieldTarget } from "./adapters/types";
 import { CHOICE_RULE_BY_ID } from "./choices/choiceRules";
 import { chooseChoiceOptions, type ChoiceOption } from "./choices/optionMatch";
 import { matchSalaryOption, salaryAmount, salaryText } from "./choices/salary";
+import { acceptsFile, setFileInput } from "./drivers/file";
 import { checkRadio, radioLabel } from "./drivers/radio";
 import { isSelectized, isUntouched, readNativeOptions, setNativeSelect } from "./drivers/select";
 import { setTextValue } from "./drivers/text";
@@ -16,7 +18,8 @@ export type FillAction =
   | { kind: "text"; element: TextLike; value: string }
   | { kind: "select"; element: HTMLSelectElement; values: string[] }
   | { kind: "selectize"; target: string; values: string[] }
-  | { kind: "radio"; element: HTMLInputElement };
+  | { kind: "radio"; element: HTMLInputElement }
+  | { kind: "file"; element: HTMLInputElement; file: StoredFile };
 
 // Access to the page's MAIN world, through the service worker.
 export interface MainWorldBridge {
@@ -24,10 +27,18 @@ export interface MainWorldBridge {
   setSelectize(items: SelectizeSetItem[]): Promise<number>;
 }
 
+// Stored files, loaded only when a page actually has a field for them.
+export interface FileSource {
+  loadCv(): Promise<StoredFile | null>;
+}
+
+const NO_FILES: FileSource = { loadCv: async () => null };
+
 export async function planFills(
   targets: FieldTarget[],
   profile: Profile,
   bridge: MainWorldBridge,
+  files: FileSource = NO_FILES,
 ): Promise<FillAction[]> {
   const actions: FillAction[] = [];
   const selectized: { tag: string; target: FieldTarget }[] = [];
@@ -44,6 +55,9 @@ export async function planFills(
       if (!isUntouched(t.element)) continue;
       const values = choose(t, readNativeOptions(t.element), t.element.multiple, profile);
       if (values) actions.push({ kind: "select", element: t.element, values });
+    } else if (t.kind === "file") {
+      const cv = await files.loadCv();
+      if (cv && acceptsFile(t.element, cv.name, cv.type)) actions.push({ kind: "file", element: t.element, file: cv });
     } else {
       const options = t.radios.map((r, i) => ({ value: String(i), text: radioLabel(r) }));
       const values = choose(t, options, false, profile);
@@ -73,6 +87,7 @@ export async function executeActions(actions: FillAction[], bridge: MainWorldBri
     if (a.kind === "text") setTextValue(a.element, a.value);
     else if (a.kind === "select") setNativeSelect(a.element, a.values);
     else if (a.kind === "radio") checkRadio(a.element);
+    else if (a.kind === "file") setFileInput(a.element, storedToFile(a.file));
     else {
       selectizeItems.push({ target: a.target, values: a.values });
       continue;

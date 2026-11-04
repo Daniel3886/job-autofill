@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { CV_ACCEPT, MAX_CV_BYTES, fileToStored, formatSize, type StoredFile } from "../shared/files";
 import {
   CHOICE_FIELDS,
   SALARY_FIELDS,
@@ -65,6 +66,8 @@ export function App() {
             </label>
           ))}
         </fieldset>
+
+        <CvSection />
 
         <fieldset>
           <legend>Preferences</legend>
@@ -148,5 +151,71 @@ function ChoiceInput({
         ))}
       </select>
     </label>
+  );
+}
+
+// The CV saves as soon as it is picked, separately from the Save button,
+// because it is stored under its own key (see profileStore).
+function CvSection() {
+  const [cv, setCv] = useState<StoredFile | null>(null);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    profileStore.getCv().then(setCv, () => setMessage("Could not load your CV."));
+  }, []);
+
+  async function onPick(e: ChangeEvent<HTMLInputElement>) {
+    const input = e.target;
+    const file = input.files?.[0];
+    input.value = ""; // picking the same file again still fires change
+    if (!file) return;
+    if (file.size > MAX_CV_BYTES) {
+      setMessage(`${file.name} is ${formatSize(file.size)}. The limit is ${formatSize(MAX_CV_BYTES)}.`);
+      return;
+    }
+    try {
+      const stored = await fileToStored(file);
+      await profileStore.saveCv(stored);
+      setCv(stored);
+      setMessage(`Saved ${stored.name}.`);
+    } catch {
+      setMessage("Could not save the file. Try again.");
+    }
+  }
+
+  async function onRemove() {
+    await profileStore.removeCv();
+    setCv(null);
+    setMessage("CV removed.");
+  }
+
+  return (
+    <fieldset>
+      <legend>CV</legend>
+      <p className="hint">Uploaded to file fields that ask for a CV or resume. Saved as soon as you pick it.</p>
+      {cv && (
+        <div className="file-card">
+          <span className="file-badge">{cv.name.split(".").pop()?.toUpperCase()}</span>
+          <div className="file-meta">
+            <strong>{cv.name}</strong>
+            <span>
+              {formatSize(cv.size)} · saved {new Date(cv.savedAt).toLocaleDateString()}
+            </span>
+          </div>
+          <button type="button" className="secondary" onClick={onRemove}>
+            Remove
+          </button>
+        </div>
+      )}
+      <label className="file-pick">
+        <span>{cv ? "Replace file" : "Choose file"}</span>
+        <input id="cv-file" type="file" accept={CV_ACCEPT} onChange={onPick} />
+      </label>
+      {message && (
+        <span role="status" className="hint">
+          {message}
+        </span>
+      )}
+    </fieldset>
   );
 }

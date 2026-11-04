@@ -6,7 +6,8 @@ import type { TextLike } from "../signals";
 export type FieldTarget =
   | { kind: "text"; fieldId: TextFieldId; question: string; element: TextLike }
   | { kind: "select"; fieldId: string; question: string; element: HTMLSelectElement }
-  | { kind: "radio"; fieldId: string; question: string; radios: HTMLInputElement[] };
+  | { kind: "radio"; fieldId: string; question: string; radios: HTMLInputElement[] }
+  | { kind: "file"; fieldId: "cv"; question: string; element: HTMLInputElement };
 
 export interface CollectContext {
   checkVisibility: boolean;

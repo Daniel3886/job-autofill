@@ -4,7 +4,9 @@ import { isSelectized } from "../drivers/select";
 import { collectTextInputs, isVisible } from "../drivers/text";
 import { FIELD_RULES } from "../fieldRules";
 import { matchInputs } from "../matcher";
+import { isCvQuestion } from "../fileRules";
 import { questionText } from "../signals";
+import { normalize } from "../text";
 import type { FieldTarget, VendorAdapter } from "./types";
 
 // Works on any page: scores text inputs (matcher.ts) and classifies selects
@@ -41,6 +43,20 @@ export const genericAdapter: VendorAdapter = {
       const fieldId = classifyQuestion(group.question);
       if (fieldId && !ctx.claimedFields.has(fieldId)) {
         targets.push({ kind: "radio", fieldId, question: group.question, radios: group.radios });
+      }
+    }
+
+    // One CV per page. File inputs are often hidden behind a styled
+    // "Click here to add a file" box, so visibility is not checked.
+    if (!ctx.claimedFields.has("cv")) {
+      for (const input of doc.querySelectorAll<HTMLInputElement>('input[type="file"]')) {
+        if (ctx.claimed.has(input) || input.disabled || (input.files?.length ?? 0) > 0) continue;
+        const question = questionText(input);
+        const attrs = normalize(`${input.name} ${input.id}`);
+        if (isCvQuestion(question) || (!question && isCvQuestion(attrs))) {
+          targets.push({ kind: "file", fieldId: "cv", question, element: input });
+          break;
+        }
       }
     }
 

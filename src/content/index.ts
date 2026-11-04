@@ -1,7 +1,7 @@
 import { profileStore } from "../shared/profileStore";
 import type { FillResultMessage, MainWorldRequest, SelectizeInfo } from "../shared/messages";
 import { collectTargets } from "./adapters";
-import { executeActions, planFills, type MainWorldBridge } from "./plan";
+import { executeActions, planFills, type FileSource, type MainWorldBridge } from "./plan";
 
 // Injected into the active tab on each icon click.
 
@@ -18,10 +18,12 @@ const bridge: MainWorldBridge = {
   },
 };
 
+const files: FileSource = { loadCv: () => profileStore.getCv() };
+
 async function run() {
   const profile = await profileStore.get();
   const targets = collectTargets(document);
-  const actions = await planFills(targets, profile, bridge);
+  const actions = await planFills(targets, profile, bridge, files);
   const filled = await executeActions(actions, bridge);
 
   const result: FillResultMessage = { type: "fill-result", filled };

@@ -16,7 +16,7 @@ chrome.action.onClicked.addListener(async (tab) => {
   if (tab.id === undefined) return;
 
   const profile = await profileStore.get();
-  if (!hasAnyValue(profile)) {
+  if (!hasAnyValue(profile) && !(await profileStore.hasCv())) {
     await chrome.runtime.openOptionsPage();
     return;
   }
