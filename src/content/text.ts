@@ -1,6 +1,6 @@
 export function normalize(text: string): string {
   return text
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([a-z])([A-Z][a-z])/g, "$1 $2")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")

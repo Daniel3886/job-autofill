@@ -21,6 +21,8 @@ describe("normalize", () => {
     expect(normalize("Miejscowość")).toBe("miejscowosc");
     expect(normalize("firstName")).toBe("first name");
     expect(normalize("last_name")).toBe("last name");
+    expect(normalize("brutto UoP, netto B2B")).toBe("brutto uop netto b2b");
+    expect(normalize("LinkedIn GitHub")).toBe("linked in git hub");
   });
 });
 
