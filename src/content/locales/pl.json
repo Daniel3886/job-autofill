@@ -5,6 +5,7 @@
     "email": { "labels": ["adres email", "adres e-mail"] },
     "phone": { "labels": ["telefon", "numer telefonu", "komórka"] },
     "city": { "labels": ["miasto", "miejscowość", "lokalizacja"] },
+    "country": { "labels": ["kraj"] },
     "salary": { "labels": ["wynagrodzenie", "oczekiwania finansowe", "stawka"] },
     "website": { "labels": ["strona www", "strona internetowa"] }
   },

@@ -60,6 +60,16 @@ describe("matchInputs", () => {
     ).toEqual({ f: "firstName", s: "lastName", city: "city" });
   });
 
+  it("tells country and city apart", () => {
+    expect(
+      matchedIds(`
+        <label for="m">Miasto *</label><input id="m">
+        <label for="k">Kraj *</label><input id="k">
+      `),
+    ).toEqual({ m: "city", k: "country" });
+    expect(matchedIds(`<input id="c" autocomplete="country-name">`)).toEqual({ c: "country" });
+  });
+
   it("falls back to text just before the input when there is no label", () => {
     expect(
       matchedIds(`

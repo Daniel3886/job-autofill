@@ -4,7 +4,7 @@ import { LOCALES, tiers, words, type Locale } from ".";
 import en from "./en.json";
 import pl from "./pl.json";
 
-const FIELD_IDS = ["firstName", "lastName", "email", "phone", "city", "salary", "linkedin", "github", "website"];
+const FIELD_IDS = ["firstName", "lastName", "email", "phone", "city", "country", "salary", "linkedin", "github", "website"];
 
 describe.each([
   ["en", en as Locale],

@@ -6,6 +6,7 @@ export type TextFieldId =
   | "email"
   | "phone"
   | "city"
+  | "country"
   | "salary"
   | "linkedin"
   | "github"
@@ -34,6 +35,7 @@ export const FIELD_RULES: FieldRule[] = [
   { id: "email", autocomplete: ["email"], inputTypes: ["email"], ...localeWords("email") },
   { id: "phone", autocomplete: ["tel", "tel-national", "tel-local"], inputTypes: ["tel"], ...localeWords("phone") },
   { id: "city", autocomplete: ["address-level2"], inputTypes: [], ...localeWords("city") },
+  { id: "country", autocomplete: ["country-name"], inputTypes: [], ...localeWords("country") },
   { id: "salary", autocomplete: [], inputTypes: [], ...localeWords("salary") },
   { id: "linkedin", autocomplete: [], inputTypes: [], ...localeWords("linkedin") },
   { id: "github", autocomplete: [], inputTypes: [], ...localeWords("github") },
