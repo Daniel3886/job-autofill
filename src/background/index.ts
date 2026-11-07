@@ -3,11 +3,37 @@ import { profileStore } from "../shared/profileStore";
 import { isFillResult, isMainWorldRequest, type MainWorldRequest } from "../shared/messages";
 import { readSelectizeInPage, setSelectizeInPage } from "./mainWorld";
 
+const PICK_FIELD = "pick-field";
+
 chrome.runtime.onInstalled.addListener(({ reason }) => {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: PICK_FIELD,
+      title: "Pick a field and save an answer",
+      contexts: ["action"],
+    });
+  });
   if (reason === chrome.runtime.OnInstalledReason.INSTALL) {
     void chrome.runtime.openOptionsPage();
   }
 });
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === PICK_FIELD && tab?.id !== undefined) void startPicker(tab.id);
+});
+
+chrome.commands.onCommand.addListener((command, tab) => {
+  if (command === PICK_FIELD && tab?.id !== undefined) void startPicker(tab.id);
+});
+
+async function startPicker(tabId: number) {
+  try {
+    await chrome.scripting.executeScript({ target: { tabId }, files: ["picker.js"] });
+  } catch (err) {
+    console.warn("Job Autofill: cannot pick fields on this page", err);
+    await showBadge(tabId, "!", "#b00020");
+  }
+}
 
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.id === undefined) return;
