@@ -1,10 +1,11 @@
 import { getList, getText, type Profile, type SalaryFieldId } from "../../shared/profile";
+import { words } from "../locales";
 import { containsPhrase, normalize } from "../text";
 import type { ChoiceOption } from "./optionMatch";
 
-const HOURLY = ["h", "godz", "godzine", "godzinowa", "godzinowe", "hour", "hourly", "per hour"];
-const B2B = ["b2b", "netto", "net", "faktura", "invoice"];
-const UOP = ["uop", "brutto", "gross", "umowa o prace"];
+const HOURLY = words((l) => l.salary?.hourly);
+const B2B = words((l) => l.salary?.b2b);
+const UOP = words((l) => l.salary?.uop);
 
 export function salaryFieldFor(question: string, profile: Profile): SalaryFieldId | null {
   const has = (words: string[]) => words.some((w) => containsPhrase(question, w));
@@ -37,8 +38,8 @@ export interface SalaryRange {
   max: number;
 }
 
-const BELOW = ["ponizej", "below", "under", "less than", "up to", "do"];
-const ABOVE = ["powyzej", "above", "over", "more than", "from", "od"];
+const BELOW = words((l) => l.salaryRanges?.below);
+const ABOVE = words((l) => l.salaryRanges?.above);
 
 export function parseSalaryRange(text: string): SalaryRange | null {
   const raw = text.replace(/^\s*[a-z]\)\s*/i, "");

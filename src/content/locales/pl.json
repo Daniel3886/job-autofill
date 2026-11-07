@@ -1,0 +1,71 @@
+{
+  "fields": {
+    "firstName": { "labels": ["imię"] },
+    "lastName": { "labels": ["nazwisko"] },
+    "email": { "labels": ["adres email", "adres e-mail"] },
+    "phone": { "labels": ["telefon", "numer telefonu", "komórka"] },
+    "city": { "labels": ["miasto", "miejscowość", "lokalizacja"] },
+    "salary": { "labels": ["wynagrodzenie", "oczekiwania finansowe", "stawka"] }
+  },
+  "questions": {
+    "availability": ["dostępność", "okres wypowiedzenia", "od kiedy", "kiedy możesz zacząć"],
+    "contractTypes": ["forma współpracy", "formy współpracy", "rodzaj umowy", "typ umowy", "forma zatrudnienia"],
+    "workMode": ["model pracy", "tryb pracy"]
+  },
+  "options": {
+    "availability": {
+      "immediately": [["od zaraz", "natychmiast", "od razu"]],
+      "1w": [["1 tydzień", "7 dni"]],
+      "2w": [["2 tygodnie", "14 dni"]],
+      "1m": [["1 miesiąc"], ["30 dni"]],
+      "2m": [["2 miesiące"], ["60 dni"]],
+      "3m": [["3 miesiące"], ["90 dni"]]
+    },
+    "contractTypes": {
+      "uop": [["umowa o pracę"]],
+      "civil": [["umowa cywilnoprawna", "umowa zlecenie", "zlecenie", "umowa o dzieło", "dzieło"]]
+    },
+    "workMode": {
+      "office": [["stacjonarny", "stacjonarna", "stacjonarnie"]],
+      "hybrid": [["hybrydowy", "hybrydowa", "hybrydowo"]],
+      "remote": [["zdalny", "zdalna", "zdalnie"]]
+    }
+  },
+  "languages": {
+    "en": ["angielski", "angielskiego"],
+    "de": ["niemiecki", "niemieckiego"],
+    "fr": ["francuski", "francuskiego"],
+    "es": ["hiszpański", "hiszpańskiego"],
+    "it": ["włoski", "włoskiego"],
+    "pl": ["polski", "polskiego"],
+    "uk": ["ukraiński", "ukraińskiego"],
+    "ru": ["rosyjski", "rosyjskiego"],
+    "nl": ["niderlandzki", "niderlandzkiego", "holenderski", "holenderskiego"],
+    "pt": ["portugalski", "portugalskiego"],
+    "cs": ["czeski", "czeskiego"],
+    "sv": ["szwedzki", "szwedzkiego"],
+    "no": ["norweski", "norweskiego"],
+    "ja": ["japoński", "japońskiego"],
+    "zh": ["chiński", "chińskiego"]
+  },
+  "levels": {
+    "A1": ["początkujący"],
+    "A2": ["podstawowy"],
+    "C1": ["zaawansowany"],
+    "C2": ["biegły"],
+    "native": ["ojczysty", "natywny"]
+  },
+  "salary": {
+    "hourly": ["godz", "godzinę", "godzinowa", "godzinowe"],
+    "b2b": ["netto", "faktura"],
+    "uop": ["brutto", "umowa o pracę"]
+  },
+  "salaryRanges": {
+    "below": ["poniżej", "do"],
+    "above": ["powyżej", "od"]
+  },
+  "cv": {
+    "keywords": ["życiorys"],
+    "otherDocuments": ["list motywacyjny", "certyfikat"]
+  }
+}

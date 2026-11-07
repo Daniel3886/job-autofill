@@ -33,6 +33,14 @@ Icon click ──▶ service worker ──inject──▶ content script in the 
 - **The CV** is stored in `chrome.storage.local` as base64 under its own key, so reading the profile never loads it. `unlimitedStorage` lifts the 10 MB quota. The content script loads it only when the page has a CV field, then sets it on the input through `DataTransfer`.
 - The extension uses `activeTab`, so it can touch a page only after you click the icon on it.
 
+## Languages of job forms
+
+Every word the matcher looks for lives in `src/content/locales/`, one JSON file per language (`en.json`, `pl.json`). Write words naturally, with diacritics ("imię", "miejscowość"); they are normalised when loaded. Words from all files are combined, so a form in either language matches.
+
+To support another language, add `src/content/locales/<code>.json` with any of the same sections, import it in `src/content/locales/index.ts`, and add it to `LOCALES`. `npm test` checks that every file only uses known field, option, language and level ids.
+
+Things that do not depend on a language stay in code: HTML `autocomplete` tokens, input types, and CEFR codes such as "C1".
+
 ## Development
 
 ```sh

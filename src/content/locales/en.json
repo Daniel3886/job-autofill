@@ -1,0 +1,73 @@
+{
+  "fields": {
+    "firstName": { "labels": ["first name", "given name", "forename"], "attributes": ["fname", "firstname", "givenname"] },
+    "lastName": { "labels": ["last name", "surname", "family name"], "attributes": ["lname", "lastname", "familyname"] },
+    "email": { "labels": ["email", "e-mail", "mail"] },
+    "phone": { "labels": ["phone", "telephone", "mobile", "phone number"], "attributes": ["tel", "phonenumber", "mobilephone"] },
+    "city": { "labels": ["city", "town", "location"] },
+    "salary": { "labels": ["salary", "expected salary", "salary expectations", "compensation"] }
+  },
+  "questions": {
+    "availability": ["availability", "notice period", "start date", "when can you start"],
+    "contractTypes": ["contract type", "type of contract", "employment type"],
+    "workMode": ["work mode", "work model", "working model"]
+  },
+  "options": {
+    "availability": {
+      "immediately": [["immediately", "asap", "as soon as possible"]],
+      "1w": [["1 week", "one week", "7 days"]],
+      "2w": [["2 weeks", "two weeks", "14 days"]],
+      "1m": [["1 month", "one month"], ["30 days"]],
+      "2m": [["2 months", "two months"], ["60 days"]],
+      "3m": [["3 months", "three months"], ["90 days"]]
+    },
+    "contractTypes": {
+      "uop": [["uop", "employment contract", "contract of employment"]],
+      "b2b": [["b2b"]]
+    },
+    "workMode": {
+      "office": [["office", "on site", "onsite"]],
+      "hybrid": [["hybrid"]],
+      "remote": [["remote", "fully remote"]]
+    }
+  },
+  "languages": {
+    "en": ["english"],
+    "de": ["german"],
+    "fr": ["french"],
+    "es": ["spanish"],
+    "it": ["italian"],
+    "pl": ["polish"],
+    "uk": ["ukrainian"],
+    "ru": ["russian"],
+    "nl": ["dutch"],
+    "pt": ["portuguese"],
+    "cs": ["czech"],
+    "sv": ["swedish"],
+    "no": ["norwegian"],
+    "ja": ["japanese"],
+    "zh": ["chinese"]
+  },
+  "levels": {
+    "A1": ["beginner"],
+    "A2": ["elementary"],
+    "B1": ["intermediate"],
+    "B2": ["upper intermediate"],
+    "C1": ["advanced"],
+    "C2": ["proficient"],
+    "native": ["native"]
+  },
+  "salary": {
+    "hourly": ["h", "hour", "hourly", "per hour"],
+    "b2b": ["b2b", "net", "invoice"],
+    "uop": ["uop", "gross"]
+  },
+  "salaryRanges": {
+    "below": ["below", "under", "less than", "up to"],
+    "above": ["above", "over", "more than", "from"]
+  },
+  "cv": {
+    "keywords": ["cv", "resume", "curriculum vitae"],
+    "otherDocuments": ["cover letter", "motivation letter", "portfolio", "certificate"]
+  }
+}
