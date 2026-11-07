@@ -249,6 +249,14 @@ describe("Traffit location dropdowns", () => {
 describe("chooseLocation", () => {
   const opts = (...texts: string[]) => texts.map((text, i) => ({ value: String(i), text }));
 
+  it("prefers the city itself over villages with the same name", () => {
+    const options = [
+      { value: "68667", text: "Łódź", details: ["Polska", "Wielkopolskie", "Poznański", "Stęszew"] },
+      { value: "10487", text: "Łódź", details: ["Polska", "Łódzkie", "Łódź", "Łódź"] },
+    ];
+    expect(chooseLocation("Łódź", options)?.value).toBe("10487");
+  });
+
   it("prefers an exact name", () => {
     expect(chooseLocation("Kraków", opts("Kraków, małopolskie", "Kraków"))?.value).toBe("1");
   });

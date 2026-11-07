@@ -1,20 +1,25 @@
 import { getText, type Profile } from "../shared/profile";
 import type { FieldTarget, LocationFieldId } from "./adapters/types";
-import type { ChoiceOption } from "./choices/optionMatch";
+import type { SelectizeInfo } from "../shared/messages";
 import { tagElement, type MainWorldBridge } from "./plan";
 import { containsPhrase, normalize } from "./text";
+
+type LocationOption = SelectizeInfo["options"][number];
 
 type LocationTarget = Extract<FieldTarget, { kind: "location" }>;
 
 const ORDER: LocationFieldId[] = ["country", "city"];
 
-export function chooseLocation(query: string, options: ChoiceOption[], country = ""): ChoiceOption | null {
+export function chooseLocation(query: string, options: LocationOption[], country = ""): LocationOption | null {
   const q = normalize(query);
   if (!q) return null;
   const named = options.filter((o) => o.value !== "").map((o) => ({ option: o, text: normalize(o.text) }));
 
   const exact = named.filter((n) => n.text === q);
-  if (exact.length > 0) return exact[0].option;
+  if (exact.length > 0) {
+    const itself = exact.find((n) => n.option.details?.some((d) => normalize(d) === q));
+    return (itself ?? exact[0]).option;
+  }
 
   let hits = named.filter((n) => normalize(n.option.text.split(/[,(]/)[0]) === q);
   const c = normalize(country);

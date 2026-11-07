@@ -14,7 +14,7 @@ export interface SelectizeSetItem {
 }
 
 export interface SelectizeInfo {
-  options: { value: string; text: string }[];
+  options: { value: string; text: string; details?: string[] }[];
   multiple: boolean;
   hasValue: boolean;
 }

@@ -74,6 +74,9 @@ export async function searchSelectizeInPage(target: string, query: string) {
     options: Object.values(s.options).map((o) => ({
       value: String(o[valueField]),
       text: String(o[labelField] ?? ""),
+      details: Object.entries(o)
+        .filter(([key, v]) => key !== valueField && key !== labelField && typeof v === "string" && v !== "")
+        .map(([, v]) => v as string),
     })),
     multiple: mode === "multi" || el.multiple,
     hasValue,
