@@ -6,9 +6,7 @@ export type FieldTarget =
   | { kind: "select"; fieldId: string; question: string; element: HTMLSelectElement }
   | { kind: "radio"; fieldId: string; question: string; radios: HTMLInputElement[] }
   | { kind: "file"; fieldId: "cv"; question: string; element: HTMLInputElement }
-  | { kind: "location"; fieldId: LocationFieldId; question: string; element: HTMLSelectElement };
-
-export type LocationFieldId = "country" | "city";
+  | { kind: "location"; fieldId: "city"; question: string; element: HTMLSelectElement };
 
 export interface CollectContext {
   checkVisibility: boolean;

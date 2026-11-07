@@ -4,9 +4,9 @@ A Chromium extension (Manifest V3) that fills job application forms with your sa
 
 ## What it fills
 
-- **Text fields and textareas:** first name, last name, email, phone, city, country, and salary.
+- **Text fields and textareas:** first name, last name, email, phone, city, and salary.
 - **Choice questions** (native selects, Selectize dropdowns, radio groups): English level, availability, contract types, work mode, and salary buckets.
-- **Traffit location dropdowns:** the country and city search boxes. The extension searches for your saved country, then your city, and picks the result whose name matches. The country can be saved in English or Polish, or as a code such as PL. English city names such as Warsaw, and names typed without ł such as Wroclaw, are looked up by their Polish spelling. A country the form already selected is kept.
+- **Traffit city dropdown:** the "Lokalizacja (Miasto)" search box. The extension searches for your saved city and picks the result whose name matches. English city names such as Warsaw, and names typed without ł such as Wroclaw, are looked up by their Polish spelling. The country dropdown is left as the form set it.
 - **CV upload:** file inputs labelled CV, resume, or życiorys get your saved CV. Inputs for a cover letter or portfolio are left alone, and so is any input whose `accept` attribute excludes your file type.
 
 A choice is filled only when exactly one option on the page matches your answer. Anything ambiguous, such as "hybrid" on a form with four hybrid options or a salary between two buckets, is left for you. Inputs that already have a value are never overwritten.
@@ -30,7 +30,7 @@ Icon click ──▶ service worker ──inject──▶ content script in the 
 
 - **Adapters** identify fields. The first vendor adapter whose `detect()` matches runs, then the generic adapter handles everything it did not claim. To add an ATS, write `src/content/adapters/<vendor>.ts` and add it to `VENDOR_ADAPTERS`.
 - **Drivers** put values into controls. Values are set through the native setter, followed by `input` and `change` events, so React and Vue forms register them.
-- **Selectize** keeps its options in a page JavaScript object that the isolated content script cannot see. The service worker runs `src/background/mainWorld.ts` in the page's MAIN world to read options and call `setValue`. Only element tags and option ids cross that boundary, plus your country and city for location searches, since the page sends those to its own server anyway.
+- **Selectize** keeps its options in a page JavaScript object that the isolated content script cannot see. The service worker runs `src/background/mainWorld.ts` in the page's MAIN world to read options and call `setValue`. Only element tags and option ids cross that boundary, plus your city for the location search, since the page sends those to its own server anyway.
 - **The CV** is stored in `chrome.storage.local` as base64 under its own key, so reading the profile never loads it. `unlimitedStorage` lifts the 10 MB quota. The content script loads it only when the page has a CV field, then sets it on the input through `DataTransfer`.
 - The extension uses `activeTab`, so it can touch a page only after you click the icon on it.
 

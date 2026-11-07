@@ -46,7 +46,6 @@ export const TEXT_FIELDS = [
   { id: "email", label: "Email", inputType: "email" },
   { id: "phone", label: "Phone", inputType: "tel" },
   { id: "city", label: "City", inputType: "text" },
-  { id: "country", label: "Country", inputType: "text" },
 ] as const;
 
 export const LINK_FIELDS = [

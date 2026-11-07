@@ -5,7 +5,6 @@
     "email": { "labels": ["email", "e-mail", "mail"] },
     "phone": { "labels": ["phone", "telephone", "mobile", "phone number"], "attributes": ["tel", "phonenumber", "mobilephone"] },
     "city": { "labels": ["city", "town", "location"] },
-    "country": { "labels": ["country"] },
     "salary": { "labels": ["salary", "expected salary", "salary expectations", "compensation"] },
     "linkedin": { "labels": ["linkedin", "linked in"], "attributes": ["linkedin"] },
     "github": { "labels": ["github", "git hub"], "attributes": ["github"] },
