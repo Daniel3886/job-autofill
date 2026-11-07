@@ -244,6 +244,11 @@ describe("city names", () => {
     expect(cityNames("Kraków")).toEqual(["Kraków", "Cracow"]);
     expect(cityNames("Gdynia")).toEqual(["Gdynia"]);
   });
+
+  it("also searches the part before a comma or bracket", () => {
+    expect(cityNames("Warszawa, Polska")).toEqual(["Warszawa, Polska", "Warszawa", "Warsaw"]);
+    expect(cityNames("Warsaw (Poland)")).toEqual(["Warsaw (Poland)", "Warsaw", "Warszawa"]);
+  });
 });
 
 describe("chooseLocation", () => {
@@ -265,9 +270,12 @@ describe("chooseLocation", () => {
     expect(chooseLocation(["Łódź"], opts("Łódź, łódzkie, Polska", "Łódzkie"))?.value).toBe("0");
   });
 
-  it("returns nothing for a partial or missing match", () => {
-    expect(chooseLocation(["Warsz"], opts("Warszawa"))).toBeNull();
-    expect(chooseLocation(["Gdańsk"], opts("Gdynia"))).toBeNull();
+  it("takes the only result when no name matches", () => {
+    expect(chooseLocation(["Warsz"], opts("Warszawa"))?.value).toBe("0");
+  });
+
+  it("returns nothing when several results do not match", () => {
+    expect(chooseLocation(["Gdańsk"], opts("Gdynia", "Sopot"))).toBeNull();
   });
 });
 

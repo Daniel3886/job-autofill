@@ -10,9 +10,13 @@ type LocationOption = SelectizeInfo["options"][number];
 type LocationTarget = Extract<FieldTarget, { kind: "location" }>;
 
 export function cityNames(saved: string): string[] {
-  const q = normalize(saved);
-  const place = LOCALES.flatMap((l) => l.places ?? []).find((names) => names.some((n) => normalize(n) === q));
-  return unique([saved, ...(place ?? [])]);
+  const places = LOCALES.flatMap((l) => l.places ?? []);
+  return unique(
+    [saved, saved.split(/[,(]/)[0]].flatMap((name) => {
+      const q = normalize(name);
+      return [name.trim(), ...(places.find((names) => names.some((n) => normalize(n) === q)) ?? [])];
+    }),
+  );
 }
 
 function unique(names: string[]): string[] {
@@ -38,7 +42,7 @@ export function chooseLocation(names: string[], options: LocationOption[]): Loca
     const hits = named.filter((n) => normalize(n.option.text.split(/[,(]/)[0]) === q);
     if (hits.length === 1) return hits[0].option;
   }
-  return null;
+  return named.length === 1 ? named[0].option : null;
 }
 
 export async function fillLocations(targets: FieldTarget[], profile: Profile, bridge: MainWorldBridge): Promise<number> {
@@ -49,16 +53,29 @@ export async function fillLocations(targets: FieldTarget[], profile: Profile, br
   for (const t of targets.filter((t): t is LocationTarget => t.kind === "location")) {
     const names = cityNames(saved);
     const tag = tagElement(t.element);
+    const seen: string[] = [];
+    let skipped = "";
 
     for (const query of names) {
       const info = await bridge.searchSelectize(tag, query);
-      if (!info || info.hasValue) break;
+      if (!info) {
+        skipped = "the dropdown could not be reached";
+        break;
+      }
+      if (info.hasValue) {
+        skipped = "the form already has a city";
+        break;
+      }
+      seen.push(...info.options.map((o) => o.text));
       const option = chooseLocation(names, info.options);
       if (option) {
         filled += await bridge.setSelectize([{ target: tag, values: [option.value] }]);
+        skipped = "";
         break;
       }
+      skipped = seen.length > 0 ? `no result matched (got: ${[...new Set(seen)].join("; ")})` : "the search returned nothing";
     }
+    if (skipped) console.info(`Job Autofill: city "${saved}" not filled: ${skipped}. Searched: ${names.join(", ")}`);
   }
   return filled;
 }

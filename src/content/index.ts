@@ -27,7 +27,11 @@ async function run() {
   const profile = await profileStore.get();
   const targets = collectTargets(document);
   const actions = await planFills(targets, profile, bridge, files);
-  const filled = (await executeActions(actions, bridge)) + (await fillLocations(targets, profile, bridge));
+  const located = await fillLocations(targets, profile, bridge).catch((err) => {
+    console.warn("Job Autofill: city fill failed", err);
+    return 0;
+  });
+  const filled = located + (await executeActions(actions, bridge));
 
   const result: FillResultMessage = { type: "fill-result", filled };
   await chrome.runtime.sendMessage(result);
