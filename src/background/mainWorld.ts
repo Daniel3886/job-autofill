@@ -1,7 +1,3 @@
-// Functions that Chrome serialises and runs in the page's MAIN world, where
-// the page's own JavaScript objects (like Selectize instances) exist.
-// They must be self-contained: no imports, no references to outer variables.
-
 interface SelectizeInstance {
   settings: { valueField: string; labelField: string; mode: string };
   options: Record<string, Record<string, unknown>>;

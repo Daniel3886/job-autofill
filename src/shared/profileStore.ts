@@ -1,13 +1,6 @@
 import { emptyProfile, type Profile } from "./profile";
 import type { StoredFile } from "./files";
 
-// The only module that touches storage. Adding passphrase encryption later
-// means changing this file and nothing else.
-//
-// The CV lives under its own key so that reading the profile (every icon
-// click, every options page load) never pulls megabytes of file data.
-// The manifest's unlimitedStorage permission lifts the 10 MB quota.
-
 const PROFILE_KEY = "profile";
 const CV_KEY = "cv";
 
@@ -27,7 +20,6 @@ export const profileStore = {
     return (stored[CV_KEY] as StoredFile | undefined) ?? null;
   },
 
-  // Checks for a CV without loading its bytes.
   async hasCv(): Promise<boolean> {
     return (await chrome.storage.local.getBytesInUse(CV_KEY)) > 0;
   },

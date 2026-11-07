@@ -6,13 +6,10 @@ export interface ChoiceOption {
   text: string;
 }
 
-// Drops list markers like "a) " or "c) " that some forms put before options.
 export function cleanOptionText(text: string): string {
   return normalize(text.replace(/^\s*[a-z]\)\s*/i, ""));
 }
 
-// The single page option that means `canonical`, or null if there is none or
-// the wording is ambiguous. See the tier rules in choiceRules.ts.
 export function matchCanonical(rule: ChoiceRule, canonical: string, options: ChoiceOption[]): ChoiceOption | null {
   const tiers = rule.options[canonical];
   if (!tiers) return null;
@@ -27,8 +24,6 @@ export function matchCanonical(rule: ChoiceRule, canonical: string, options: Cho
   return null;
 }
 
-// Option values to select for the user's answer(s), or null to skip.
-// A single-choice control is filled only when exactly one option matches.
 export function chooseChoiceOptions(
   rule: ChoiceRule,
   chosen: string[],

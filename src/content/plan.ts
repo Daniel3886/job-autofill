@@ -1,8 +1,9 @@
-import { getList, getText, type Profile } from "../shared/profile";
+import { getLanguages, getList, getText, type Profile } from "../shared/profile";
 import { storedToFile, type StoredFile } from "../shared/files";
 import { TARGET_ATTR, type SelectizeInfo, type SelectizeSetItem } from "../shared/messages";
 import type { FieldTarget } from "./adapters/types";
 import { CHOICE_RULE_BY_ID } from "./choices/choiceRules";
+import { LANGUAGE_LEVEL_RULE } from "./choices/languages";
 import { chooseChoiceOptions, type ChoiceOption } from "./choices/optionMatch";
 import { matchSalaryOption, salaryAmount, salaryText } from "./choices/salary";
 import { acceptsFile, setFileInput } from "./drivers/file";
@@ -11,9 +12,6 @@ import { isSelectized, isUntouched, readNativeOptions, setNativeSelect } from ".
 import { setTextValue } from "./drivers/text";
 import type { TextLike } from "./signals";
 
-// Decides what to put where (plan), then does it (execute). Splitting the two
-// keeps every decision testable without a browser.
-
 export type FillAction =
   | { kind: "text"; element: TextLike; value: string }
   | { kind: "select"; element: HTMLSelectElement; values: string[] }
@@ -21,13 +19,11 @@ export type FillAction =
   | { kind: "radio"; element: HTMLInputElement }
   | { kind: "file"; element: HTMLInputElement; file: StoredFile };
 
-// Access to the page's MAIN world, through the service worker.
 export interface MainWorldBridge {
   readSelectize(targets: string[]): Promise<Record<string, SelectizeInfo | null>>;
   setSelectize(items: SelectizeSetItem[]): Promise<number>;
 }
 
-// Stored files, loaded only when a page actually has a field for them.
 export interface FileSource {
   loadCv(): Promise<StoredFile | null>;
 }
@@ -65,7 +61,6 @@ export async function planFills(
     }
   }
 
-  // Selectize keeps its options in a page object, so read them in one round trip.
   if (selectized.length > 0) {
     const infos = await bridge.readSelectize(selectized.map((s) => s.tag));
     for (const { tag, target } of selectized) {
@@ -104,6 +99,11 @@ function choose(t: FieldTarget, options: ChoiceOption[], multiple: boolean, prof
     const option = amount === null ? null : matchSalaryOption(amount, options);
     return option ? [option.value] : null;
   }
+  if (t.fieldId.startsWith("language:")) {
+    const code = t.fieldId.slice("language:".length);
+    const level = getLanguages(profile).find((l) => l.language === code)?.level;
+    return level ? chooseChoiceOptions(LANGUAGE_LEVEL_RULE, [level], options, multiple) : null;
+  }
   const rule = CHOICE_RULE_BY_ID.get(t.fieldId);
   if (!rule) return null;
   return chooseChoiceOptions(rule, getList(profile, t.fieldId), options, multiple);
@@ -111,8 +111,6 @@ function choose(t: FieldTarget, options: ChoiceOption[], multiple: boolean, prof
 
 let tagCounter = 0;
 
-// Marks an element so a MAIN world function can find it again. The DOM is
-// shared between worlds; JavaScript variables are not.
 function tagElement(el: HTMLElement): string {
   const existing = el.getAttribute(TARGET_ATTR);
   if (existing) return existing;

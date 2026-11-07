@@ -1,17 +1,11 @@
-// Files the user stores in the extension, such as the CV.
-// chrome.storage.local stores JSON only, so file bytes are kept as base64.
-// The extension cannot reopen a file from disk later, so the bytes themselves
-// are copied in when the user picks the file.
-
 export interface StoredFile {
   name: string;
   type: string;
-  size: number; // bytes of the original file
+  size: number;
   dataBase64: string;
-  savedAt: string; // ISO date
+  savedAt: string;
 }
 
-// Job boards commonly cap uploads at 5-20 MB; anything bigger will not be accepted anyway.
 export const MAX_CV_BYTES = 20 * 1024 * 1024;
 
 export const CV_ACCEPT = ".pdf,.doc,.docx,.odt,.rtf";
@@ -31,8 +25,6 @@ export function storedToFile(stored: StoredFile): File {
   return new File([base64ToBytes(stored.dataBase64)], stored.name, { type: stored.type });
 }
 
-// String.fromCharCode in chunks: spreading a whole multi-MB array at once
-// exceeds the engine's argument limit.
 export function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
   const CHUNK = 0x8000;

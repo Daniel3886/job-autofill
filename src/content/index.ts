@@ -3,8 +3,6 @@ import type { FillResultMessage, MainWorldRequest, SelectizeInfo } from "../shar
 import { collectTargets } from "./adapters";
 import { executeActions, planFills, type FileSource, type MainWorldBridge } from "./plan";
 
-// Injected into the active tab on each icon click.
-
 const bridge: MainWorldBridge = {
   async readSelectize(targets) {
     const req: MainWorldRequest = { type: "main-world", op: "readSelectize", targets };

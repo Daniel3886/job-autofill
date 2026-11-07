@@ -1,12 +1,3 @@
-// How to recognise each free-text field on a page.
-// keywords: matched against visible text (label, aria-label, placeholder, nearby text)
-//           and against name/id attributes. Write them in plain lowercase ASCII
-//           (no Polish diacritics) because text is normalised the same way.
-// attrKeywords: extra tokens that only make sense inside name/id attributes.
-//
-// "salary" is a question type, not a profile value: which of the three salary
-// values to use is decided from the question text (choices/salary.ts).
-
 export type TextFieldId = "firstName" | "lastName" | "email" | "phone" | "city" | "salary";
 
 export interface FieldRule {

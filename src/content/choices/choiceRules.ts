@@ -1,16 +1,6 @@
 import { SALARY_KEYWORDS } from "../fieldRules";
 import { containsPhrase } from "../text";
-
-// For each choice field: which questions ask for it, and how each profile
-// option id is worded on job sites.
-//
-// Synonyms come in tiers. The first tier that matches exactly one option on
-// the page wins; a tier that matches several options means "ambiguous" and
-// the question is skipped. Example: "1 miesiąc" (tier 1) beats "30 dni"
-// (tier 2) when a form offers both.
-//
-// All phrases are normalised: lowercase ASCII, no diacritics, words separated
-// by single spaces.
+import { languageInQuestion } from "./languages";
 
 export interface ChoiceRule {
   fieldId: string;
@@ -19,18 +9,6 @@ export interface ChoiceRule {
 }
 
 export const CHOICE_RULES: ChoiceRule[] = [
-  {
-    fieldId: "englishLevel",
-    questionKeywords: ["angielski", "angielskiego", "english"],
-    options: {
-      A1: [["a1"], ["beginner", "poczatkujacy"]],
-      A2: [["a2"], ["elementary", "podstawowy"]],
-      B1: [["b1"], ["intermediate"]],
-      B2: [["b2"], ["upper intermediate"]],
-      C1: [["c1"], ["advanced", "zaawansowany"]],
-      C2: [["c2"], ["proficient", "native", "biegly"]],
-    },
-  },
   {
     fieldId: "availability",
     questionKeywords: [
@@ -83,12 +61,12 @@ export const CHOICE_RULES: ChoiceRule[] = [
 
 export const CHOICE_RULE_BY_ID = new Map(CHOICE_RULES.map((r) => [r.fieldId, r]));
 
-// Which field a select or radio question asks for: a choice field id,
-// "salary", or null when nothing (or more than one thing) matches.
 export function classifyQuestion(question: string): string | null {
   const hits = CHOICE_RULES.filter((r) => r.questionKeywords.some((k) => containsPhrase(question, k))).map(
     (r) => r.fieldId,
   );
   if (SALARY_KEYWORDS.some((k) => containsPhrase(question, k))) hits.push("salary");
+  const language = languageInQuestion(question);
+  if (language) hits.push(`language:${language}`);
   return hits.length === 1 ? hits[0] : null;
 }

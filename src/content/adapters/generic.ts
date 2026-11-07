@@ -9,9 +9,6 @@ import { questionText } from "../signals";
 import { normalize } from "../text";
 import type { FieldTarget, VendorAdapter } from "./types";
 
-// Works on any page: scores text inputs (matcher.ts) and classifies selects
-// and radio groups by their question text. Runs after a vendor adapter and
-// ignores whatever that adapter claimed.
 export const genericAdapter: VendorAdapter = {
   id: "generic",
 
@@ -30,7 +27,6 @@ export const genericAdapter: VendorAdapter = {
 
     for (const select of doc.querySelectorAll("select")) {
       if (ctx.claimed.has(select) || select.disabled) continue;
-      // Selectize hides the real select, so only check visibility for plain ones.
       if (ctx.checkVisibility && !isSelectized(select) && !isVisible(select)) continue;
       const question = questionText(select);
       const fieldId = classifyQuestion(question);
@@ -46,8 +42,6 @@ export const genericAdapter: VendorAdapter = {
       }
     }
 
-    // One CV per page. File inputs are often hidden behind a styled
-    // "Click here to add a file" box, so visibility is not checked.
     if (!ctx.claimedFields.has("cv")) {
       for (const input of doc.querySelectorAll<HTMLInputElement>('input[type="file"]')) {
         if (ctx.claimed.has(input) || input.disabled || (input.files?.length ?? 0) > 0) continue;

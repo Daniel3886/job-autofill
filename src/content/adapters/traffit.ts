@@ -5,10 +5,6 @@ import type { TextLike } from "../signals";
 import { normalize } from "../text";
 import type { FieldTarget, VendorAdapter } from "./types";
 
-// Traffit ATS public forms (*.traffit.com/public/form/...).
-// Text fields carry a stable data-sid; dropdowns are hidden <select>s wrapped
-// by Selectize.js, each inside a .form-group with its <label>.
-
 const SID_TO_FIELD: Record<string, TextFieldId> = {
   firstName: "firstName",
   lastName: "lastName",
@@ -43,8 +39,6 @@ export const traffitAdapter: VendorAdapter = {
 
     for (const select of doc.querySelectorAll<HTMLSelectElement>(`${FORM} select`)) {
       ctx.claimed.add(select);
-      // Country and city options are fetched from Traffit's server as you type.
-      // Not supported yet.
       if (select.classList.contains("location-select")) continue;
 
       const label = select.closest(".form-group")?.querySelector("label");

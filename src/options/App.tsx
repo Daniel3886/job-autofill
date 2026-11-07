@@ -1,52 +1,74 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { CV_ACCEPT, MAX_CV_BYTES, fileToStored, formatSize, type StoredFile } from "../shared/files";
 import {
   CHOICE_FIELDS,
+  LANGUAGES,
+  LANGUAGE_LEVELS,
   SALARY_FIELDS,
   TEXT_FIELDS,
+  getLanguages,
   getList,
   getText,
   type ChoiceField,
+  type LanguageSkill,
   type Profile,
   type ProfileValue,
 } from "../shared/profile";
 import { profileStore } from "../shared/profileStore";
 
-type Status = "loading" | "idle" | "saving" | "saved" | "error";
+interface ToastMessage {
+  kind: "success" | "error";
+  text: string;
+}
+
+type ShowToast = (kind: ToastMessage["kind"], text: string) => void;
 
 export function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [status, setStatus] = useState<Status>("loading");
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const toastTimer = useRef<number | undefined>(undefined);
+
+  const showToast = useCallback<ShowToast>((kind, text) => {
+    window.clearTimeout(toastTimer.current);
+    setToast({ kind, text });
+    toastTimer.current = window.setTimeout(() => setToast(null), kind === "success" ? 2500 : 5000);
+  }, []);
 
   useEffect(() => {
     profileStore
       .get()
-      .then((p) => {
-        setProfile(p);
-        setStatus("idle");
-      })
-      .catch(() => setStatus("error"));
+      .then((p) => setProfile({ ...p, languages: getLanguages(p) }))
+      .catch(() => setLoadFailed(true));
   }, []);
 
   function update(id: string, value: ProfileValue) {
     setProfile((p) => (p ? { ...p, values: { ...p.values, [id]: value } } : p));
-    setStatus("idle");
+  }
+
+  function updateLanguages(languages: LanguageSkill[]) {
+    setProfile((p) => (p ? { ...p, languages } : p));
   }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!profile) return;
-    setStatus("saving");
+    setSaving(true);
+    const { englishLevel: _legacy, ...values } = profile.values;
+    const languages = (profile.languages ?? []).filter((l) => l.level !== "");
     try {
-      await profileStore.save(profile);
-      setStatus("saved");
+      await profileStore.save({ ...profile, values, languages });
+      showToast("success", "Profile saved");
     } catch {
-      setStatus("error");
+      showToast("error", "Could not save your profile. Try again.");
+    } finally {
+      setSaving(false);
     }
   }
 
   if (!profile) {
-    return <main>{status === "error" ? "Could not load your profile." : "Loading…"}</main>;
+    return <main>{loadFailed ? "Could not load your profile." : "Loading…"}</main>;
   }
 
   return (
@@ -67,7 +89,9 @@ export function App() {
           ))}
         </fieldset>
 
-        <CvSection />
+        <CvSection showToast={showToast} />
+
+        <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
 
         <fieldset>
           <legend>Preferences</legend>
@@ -98,16 +122,96 @@ export function App() {
         </fieldset>
 
         <div className="actions">
-          <button type="submit" disabled={status === "saving"}>
-            Save
+          <button type="submit" disabled={saving}>
+            {saving ? "Saving…" : "Save profile"}
           </button>
-          <span role="status">
-            {status === "saved" && "Saved."}
-            {status === "error" && "Something went wrong. Try again."}
-          </span>
         </div>
       </form>
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </main>
+  );
+}
+
+function Toast({ toast, onClose }: { toast: ToastMessage | null; onClose: () => void }) {
+  return (
+    <div className="toast-region" role="status" aria-live="polite">
+      {toast && (
+        <div className={`toast toast-${toast.kind}`}>
+          <span className="toast-icon" aria-hidden="true">
+            {toast.kind === "success" ? "✓" : "!"}
+          </span>
+          <span>{toast.text}</span>
+          <button type="button" className="toast-close" onClick={onClose} aria-label="Dismiss">
+            ×
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LanguagesSection({
+  languages,
+  onChange,
+}: {
+  languages: LanguageSkill[];
+  onChange: (languages: LanguageSkill[]) => void;
+}) {
+  const used = new Set(languages.map((l) => l.language));
+  const nextLanguage = LANGUAGES.find((l) => !used.has(l.code));
+
+  function updateRow(index: number, patch: Partial<LanguageSkill>) {
+    onChange(languages.map((l, i) => (i === index ? { ...l, ...patch } : l)));
+  }
+
+  return (
+    <fieldset>
+      <legend>Languages</legend>
+      <p className="hint">Used when a form asks for your level in a specific language.</p>
+      {languages.length === 0 && <p className="empty">No languages added yet.</p>}
+      {languages.map((row, index) => (
+        <div className="language-row" key={row.language}>
+          <label>
+            <span>Language</span>
+            <select value={row.language} onChange={(e) => updateRow(index, { language: e.target.value })}>
+              {LANGUAGES.filter((l) => l.code === row.language || !used.has(l.code)).map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Level</span>
+            <select value={row.level} onChange={(e) => updateRow(index, { level: e.target.value })}>
+              <option value="">Choose level</option>
+              {LANGUAGE_LEVELS.map((l) => (
+                <option key={l.value} value={l.value}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => onChange(languages.filter((_, i) => i !== index))}
+            aria-label={`Remove ${LANGUAGES.find((l) => l.code === row.language)?.label ?? "language"}`}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      {nextLanguage && (
+        <button
+          type="button"
+          className="secondary add"
+          onClick={() => onChange([...languages, { language: nextLanguage.code, level: "" }])}
+        >
+          + Add language
+        </button>
+      )}
+    </fieldset>
   );
 }
 
@@ -154,39 +258,36 @@ function ChoiceInput({
   );
 }
 
-// The CV saves as soon as it is picked, separately from the Save button,
-// because it is stored under its own key (see profileStore).
-function CvSection() {
+function CvSection({ showToast }: { showToast: ShowToast }) {
   const [cv, setCv] = useState<StoredFile | null>(null);
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    profileStore.getCv().then(setCv, () => setMessage("Could not load your CV."));
-  }, []);
+    profileStore.getCv().then(setCv, () => showToast("error", "Could not load your CV."));
+  }, [showToast]);
 
   async function onPick(e: ChangeEvent<HTMLInputElement>) {
     const input = e.target;
     const file = input.files?.[0];
-    input.value = ""; // picking the same file again still fires change
+    input.value = "";
     if (!file) return;
     if (file.size > MAX_CV_BYTES) {
-      setMessage(`${file.name} is ${formatSize(file.size)}. The limit is ${formatSize(MAX_CV_BYTES)}.`);
+      showToast("error", `${file.name} is ${formatSize(file.size)}. The limit is ${formatSize(MAX_CV_BYTES)}.`);
       return;
     }
     try {
       const stored = await fileToStored(file);
       await profileStore.saveCv(stored);
       setCv(stored);
-      setMessage(`Saved ${stored.name}.`);
+      showToast("success", `CV saved: ${stored.name}`);
     } catch {
-      setMessage("Could not save the file. Try again.");
+      showToast("error", "Could not save the file. Try again.");
     }
   }
 
   async function onRemove() {
     await profileStore.removeCv();
     setCv(null);
-    setMessage("CV removed.");
+    showToast("success", "CV removed");
   }
 
   return (
@@ -211,11 +312,6 @@ function CvSection() {
         <span>{cv ? "Replace file" : "Choose file"}</span>
         <input id="cv-file" type="file" accept={CV_ACCEPT} onChange={onPick} />
       </label>
-      {message && (
-        <span role="status" className="hint">
-          {message}
-        </span>
-      )}
     </fieldset>
   );
 }

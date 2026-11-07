@@ -1,14 +1,43 @@
-// The profile is a map from field id to value rather than a fixed object.
-// Text fields hold a string, multi-choice fields a list of option ids.
-// User-defined fields (the planned custom field picker) can be added later
-// under new ids without a migration.
-
 export type ProfileValue = string | string[];
+
+export interface LanguageSkill {
+  language: string;
+  level: string;
+}
 
 export interface Profile {
   version: 1;
   values: Record<string, ProfileValue>;
+  languages?: LanguageSkill[];
 }
+
+export const LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "de", label: "German" },
+  { code: "fr", label: "French" },
+  { code: "es", label: "Spanish" },
+  { code: "it", label: "Italian" },
+  { code: "pl", label: "Polish" },
+  { code: "uk", label: "Ukrainian" },
+  { code: "ru", label: "Russian" },
+  { code: "nl", label: "Dutch" },
+  { code: "pt", label: "Portuguese" },
+  { code: "cs", label: "Czech" },
+  { code: "sv", label: "Swedish" },
+  { code: "no", label: "Norwegian" },
+  { code: "ja", label: "Japanese" },
+  { code: "zh", label: "Chinese" },
+];
+
+export const LANGUAGE_LEVELS = [
+  { value: "A1", label: "A1" },
+  { value: "A2", label: "A2" },
+  { value: "B1", label: "B1" },
+  { value: "B2", label: "B2" },
+  { value: "C1", label: "C1" },
+  { value: "C2", label: "C2" },
+  { value: "native", label: "Native" },
+];
 
 export const TEXT_FIELDS = [
   { id: "firstName", label: "First name", inputType: "text" },
@@ -18,8 +47,6 @@ export const TEXT_FIELDS = [
   { id: "city", label: "City", inputType: "text" },
 ] as const;
 
-// Salary depends on unit and contract type, so each has its own value.
-// The extension never converts between them.
 export const SALARY_FIELDS = [
   { id: "salaryMonthlyGrossUop", label: "Monthly, gross, employment contract (UoP)" },
   { id: "salaryMonthlyNetB2b", label: "Monthly, net, B2B" },
@@ -35,15 +62,7 @@ export interface ChoiceField {
   options: { value: string; label: string }[];
 }
 
-// Fixed answer lists. The content script maps each option id to the wording
-// used on job sites (src/content/choices/choiceRules.ts).
 export const CHOICE_FIELDS: ChoiceField[] = [
-  {
-    id: "englishLevel",
-    label: "English level",
-    multiple: false,
-    options: ["A1", "A2", "B1", "B2", "C1", "C2"].map((v) => ({ value: v, label: v })),
-  },
   {
     id: "availability",
     label: "Available to start",
@@ -69,8 +88,8 @@ export const CHOICE_FIELDS: ChoiceField[] = [
   },
   {
     id: "workMode",
-    label: "Preferred work mode",
-    multiple: false,
+    label: "Work modes you accept",
+    multiple: true,
     options: [
       { value: "office", label: "Office" },
       { value: "hybrid", label: "Hybrid" },
@@ -94,7 +113,14 @@ export function getList(profile: Profile, id: string): string[] {
   return typeof v === "string" && v !== "" ? [v] : [];
 }
 
+export function getLanguages(profile: Profile): LanguageSkill[] {
+  if (profile.languages) return profile.languages;
+  const legacyEnglish = getText(profile, "englishLevel");
+  return legacyEnglish ? [{ language: "en", level: legacyEnglish }] : [];
+}
+
 export function hasAnyValue(profile: Profile): boolean {
+  if (getLanguages(profile).length > 0) return true;
   return Object.values(profile.values).some((v) =>
     Array.isArray(v) ? v.length > 0 : v.trim() !== "",
   );

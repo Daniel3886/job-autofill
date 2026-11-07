@@ -5,7 +5,6 @@ import { normalize } from "./text";
 
 function render(html: string): (HTMLInputElement | HTMLTextAreaElement)[] {
   document.body.innerHTML = html;
-  // jsdom has no layout, so skip the visibility check in tests.
   return collectTextInputs(document, false);
 }
 

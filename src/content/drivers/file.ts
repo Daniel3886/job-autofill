@@ -1,7 +1,3 @@
-// File inputs. A web page cannot set a file input's contents, but an
-// extension's content script can: build a FileList through DataTransfer and
-// assign it, then fire the events a real file pick fires.
-
 export function setFileInput(el: HTMLInputElement, file: File): void {
   const dt = new DataTransfer();
   dt.items.add(file);
@@ -10,8 +6,6 @@ export function setFileInput(el: HTMLInputElement, file: File): void {
   el.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
-// Respects the input's accept attribute (".pdf,.docx", "application/pdf",
-// "application/*"). No accept attribute means any file.
 export function acceptsFile(el: HTMLInputElement, name: string, type: string): boolean {
   const accept = el.accept.trim();
   if (!accept) return true;

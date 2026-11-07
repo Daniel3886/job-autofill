@@ -6,10 +6,6 @@ const HOURLY = ["h", "godz", "godzine", "godzinowa", "godzinowe", "hour", "hourl
 const B2B = ["b2b", "netto", "net", "faktura", "invoice"];
 const UOP = ["uop", "brutto", "gross", "umowa o prace"];
 
-// Which salary value a question asks for, or null when it cannot be told.
-// "Oczekiwania finansowe (brutto UoP, netto B2B)" names both contracts: the
-// answer depends on the contract, so it is used only when the user accepts
-// exactly one contract type.
 export function salaryFieldFor(question: string, profile: Profile): SalaryFieldId | null {
   const has = (words: string[]) => words.some((w) => containsPhrase(question, w));
   if (has(HOURLY)) return "salaryHourlyNetB2b";
@@ -44,8 +40,6 @@ export interface SalaryRange {
 const BELOW = ["ponizej", "below", "under", "less than", "up to", "do"];
 const ABOVE = ["powyzej", "above", "over", "more than", "from", "od"];
 
-// "b) 8500 - 10000 PLN" -> 8500..10000, "poniżej 8000" -> 0..8000,
-// "powyżej 34000" -> 34000..Infinity. Numbers may use spaces: "10 000".
 export function parseSalaryRange(text: string): SalaryRange | null {
   const raw = text.replace(/^\s*[a-z]\)\s*/i, "");
   const nums = [...raw.matchAll(/\d[\d\s.]*\d|\d/g)].map((m) => Number(m[0].replace(/[\s.]/g, "")));
@@ -58,8 +52,6 @@ export function parseSalaryRange(text: string): SalaryRange | null {
   return null;
 }
 
-// The one bucket that contains the amount. Gaps between buckets and
-// overlapping buckets both mean "skip".
 export function matchSalaryOption(amount: number, options: ChoiceOption[]): ChoiceOption | null {
   const hits = options.filter((o) => {
     const r = parseSalaryRange(o.text);

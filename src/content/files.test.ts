@@ -69,7 +69,6 @@ describe("acceptsFile", () => {
 });
 
 describe("CV targets", () => {
-  // Traffit's markup: the real input sits hidden inside a styled box.
   const TRAFFIT_CV = `
     <div class="form-group">
       <label class="required" for="cvf">CV</label>

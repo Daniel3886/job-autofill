@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Profile } from "../../shared/profile";
 import { CHOICE_RULE_BY_ID, classifyQuestion } from "./choiceRules";
+import { LANGUAGE_LEVEL_RULE } from "./languages";
 import { chooseChoiceOptions } from "./optionMatch";
 import { matchSalaryOption, parseSalaryRange, salaryFieldFor } from "./salary";
 import { normalize } from "../text";
@@ -9,7 +10,6 @@ const opts = (texts: string[]) => texts.map((text, i) => ({ value: String(i), te
 const rule = (id: string) => CHOICE_RULE_BY_ID.get(id)!;
 const profile = (values: Profile["values"]): Profile => ({ version: 1, values });
 
-// Option texts copied from a real Traffit form.
 const TRAFFIT_AVAILABILITY = opts([
   'a) "od zaraz"',
   "b) 1 tydzień",
@@ -43,7 +43,10 @@ const TRAFFIT_SALARY = opts([
 
 describe("classifyQuestion", () => {
   it.each([
-    ["Poziom znajomości języka angielskiego", "englishLevel"],
+    ["Poziom znajomości języka angielskiego", "language:en"],
+    ["Poziom znajomości języka niemieckiego", "language:de"],
+    ["English level", "language:en"],
+    ["Znajomość języka angielskiego i niemieckiego", null],
     ["Dostępność", "availability"],
     ["Od kiedy możesz zacząć pracę?", "availability"],
     ["Możliwe formy współpracy", "contractTypes"],
@@ -78,12 +81,23 @@ describe("chooseChoiceOptions", () => {
     expect(chooseChoiceOptions(rule("contractTypes"), ["b2b"], TRAFFIT_CONTRACT, false)).toEqual(["2"]);
   });
 
-  it("matches English level by CEFR code", () => {
-    expect(chooseChoiceOptions(rule("englishLevel"), ["C1"], opts(["A1", "A2", "B1", "B2", "C1", "C2"]), false)).toEqual(["4"]);
+  it("matches a language level by CEFR code", () => {
+    expect(chooseChoiceOptions(LANGUAGE_LEVEL_RULE, ["C1"], opts(["A1", "A2", "B1", "B2", "C1", "C2"]), false)).toEqual(["4"]);
+  });
+
+  it("matches native speakers to a native option, or to C2 when there is none", () => {
+    expect(chooseChoiceOptions(LANGUAGE_LEVEL_RULE, ["native"], opts(["B2", "C1", "Ojczysty"]), false)).toEqual(["2"]);
+    expect(chooseChoiceOptions(LANGUAGE_LEVEL_RULE, ["native"], opts(["B2", "C1", "C2"]), false)).toEqual(["2"]);
   });
 
   it("returns null when the answer is not set", () => {
-    expect(chooseChoiceOptions(rule("englishLevel"), [], opts(["C1"]), false)).toBeNull();
+    expect(chooseChoiceOptions(LANGUAGE_LEVEL_RULE, [], opts(["C1"]), false)).toBeNull();
+  });
+
+  it("picks the one accepted work mode a single-choice form offers unambiguously", () => {
+    expect(chooseChoiceOptions(rule("workMode"), ["hybrid", "remote"], TRAFFIT_WORK_MODE, false)).toEqual(["5"]);
+    expect(chooseChoiceOptions(rule("workMode"), ["office", "remote"], TRAFFIT_WORK_MODE, false)).toBeNull();
+    expect(chooseChoiceOptions(rule("workMode"), ["office", "remote"], TRAFFIT_WORK_MODE, true)).toEqual(["0", "5"]);
   });
 });
 
