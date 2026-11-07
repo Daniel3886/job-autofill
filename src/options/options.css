@@ -332,3 +332,35 @@ button.add {
   font-size: 0.9em;
   color: var(--accent);
 }
+
+.answer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.answer-row + .answer-row {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.answer-row .question {
+  grid-column: 1 / -1;
+}
+
+textarea {
+  font: inherit;
+  font-weight: 400;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

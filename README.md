@@ -33,6 +33,16 @@ Icon click ──▶ service worker ──inject──▶ content script in the 
 - **The CV** is stored in `chrome.storage.local` as base64 under its own key, so reading the profile never loads it. `unlimitedStorage` lifts the 10 MB quota. The content script loads it only when the page has a CV field, then sets it on the input through `DataTransfer`.
 - The extension uses `activeTab`, so it can touch a page only after you click the icon on it.
 
+## Saved answers
+
+For questions the extension does not know (e.g. "Czy znasz Dockera i OpenShift?"), save your own answer:
+
+1. On the job form, right-click the extension icon and choose **Pick a field and save an answer**, or press **Alt+Shift+F** (change it at `chrome://extensions/shortcuts`).
+2. Click a text field. A panel shows the field's question (editable) and an answer box.
+3. **Save and fill** stores the answer and fills the field. Esc cancels.
+
+From then on, one click fills any field whose question matches, ignoring case, Polish letters and punctuation. Saved answers take priority over everything else. They are listed, editable and removable on the profile page.
+
 ## Languages of job forms
 
 Every word the matcher looks for lives in `src/content/locales/`, one JSON file per language (`en.json`, `pl.json`). Write words naturally, with diacritics ("imię", "miejscowość"); they are normalised when loaded. Words from all files are combined, so a form in either language matches.

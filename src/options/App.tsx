@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import type { SavedAnswer } from "../shared/answers";
 import { CV_ACCEPT, MAX_CV_BYTES, fileToStored, formatSize, type StoredFile } from "../shared/files";
 import {
   CHOICE_FIELDS,
@@ -35,6 +36,7 @@ export function App() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [answers, setAnswers] = useState<SavedAnswer[]>([]);
   const toastTimer = useRef<number | undefined>(undefined);
 
   const showToast = useCallback<ShowToast>((kind, text) => {
@@ -48,6 +50,7 @@ export function App() {
       .get()
       .then((p) => setProfile({ ...p, languages: getLanguages(p), salaries: getSalaries(p) }))
       .catch(() => setLoadFailed(true));
+    profileStore.getAnswers().then(setAnswers, () => setLoadFailed(true));
   }, []);
 
   function update(id: string, value: ProfileValue) {
@@ -71,7 +74,14 @@ export function App() {
     const languages = (profile.languages ?? []).filter((l) => l.level !== "");
     const salaries = (profile.salaries ?? []).filter((s) => s.amount.trim() !== "");
     try {
-      await profileStore.save({ ...profile, values, languages, salaries });
+      const keptAnswers = answers
+        .map((a) => ({ ...a, question: a.question.replace(/\s+/g, " ").trim() }))
+        .filter((a) => a.question !== "" && a.answer.trim() !== "");
+      await Promise.all([
+        profileStore.save({ ...profile, values, languages, salaries }),
+        profileStore.saveAnswers(keptAnswers),
+      ]);
+      setAnswers(keptAnswers);
       showToast("success", "Profile saved");
     } catch {
       showToast("error", "Could not save your profile. Try again.");
@@ -135,6 +145,8 @@ export function App() {
         </fieldset>
 
         <SalarySection salaries={profile.salaries ?? []} onChange={updateSalaries} />
+
+        <SavedAnswersSection answers={answers} onChange={setAnswers} />
 
         <div className="actions">
           <button type="submit" disabled={saving}>
@@ -446,6 +458,45 @@ function SalarySection({
       >
         + Add salary
       </button>
+    </fieldset>
+  );
+}
+
+function SavedAnswersSection({
+  answers,
+  onChange,
+}: {
+  answers: SavedAnswer[];
+  onChange: (answers: SavedAnswer[]) => void;
+}) {
+  function updateRow(index: number, patch: Partial<SavedAnswer>) {
+    onChange(answers.map((a, i) => (i === index ? { ...a, ...patch } : a)));
+  }
+
+  return (
+    <fieldset>
+      <legend>Saved answers</legend>
+      <p className="hint">
+        Filled into any form field whose question matches exactly (case, Polish letters and punctuation are ignored).
+        To add one, right-click the extension icon on a job form and choose "Pick a field and save an answer", or press
+        Alt+Shift+F.
+      </p>
+      {answers.length === 0 && <p className="empty">No saved answers yet.</p>}
+      {answers.map((row, index) => (
+        <div className="answer-row" key={`${index}-${row.savedAt}`}>
+          <label className="question">
+            <span>Question</span>
+            <textarea rows={2} value={row.question} onChange={(e) => updateRow(index, { question: e.target.value })} />
+          </label>
+          <label>
+            <span>Answer</span>
+            <input type="text" value={row.answer} onChange={(e) => updateRow(index, { answer: e.target.value })} />
+          </label>
+          <button type="button" className="secondary" onClick={() => onChange(answers.filter((_, i) => i !== index))}>
+            Remove
+          </button>
+        </div>
+      ))}
     </fieldset>
   );
 }
