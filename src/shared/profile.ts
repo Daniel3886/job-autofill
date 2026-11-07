@@ -47,6 +47,12 @@ export const TEXT_FIELDS = [
   { id: "city", label: "City", inputType: "text" },
 ] as const;
 
+export const LINK_FIELDS = [
+  { id: "linkedin", label: "LinkedIn", placeholder: "https://www.linkedin.com/in/…" },
+  { id: "github", label: "GitHub", placeholder: "https://github.com/…" },
+  { id: "website", label: "Portfolio or website", placeholder: "https://…" },
+] as const;
+
 export const SALARY_FIELDS = [
   { id: "salaryMonthlyGrossUop", label: "Monthly, gross, employment contract (UoP)" },
   { id: "salaryMonthlyNetB2b", label: "Monthly, net, B2B" },

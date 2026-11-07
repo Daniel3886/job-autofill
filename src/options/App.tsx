@@ -4,6 +4,7 @@ import {
   CHOICE_FIELDS,
   LANGUAGES,
   LANGUAGE_LEVELS,
+  LINK_FIELDS,
   SALARY_FIELDS,
   TEXT_FIELDS,
   getLanguages,
@@ -85,6 +86,22 @@ export function App() {
             <label key={id}>
               <span>{label}</span>
               <input type={inputType} value={getText(profile, id)} onChange={(e) => update(id, e.target.value)} />
+            </label>
+          ))}
+        </fieldset>
+
+        <fieldset>
+          <legend>Links</legend>
+          <p className="hint">Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
+          {LINK_FIELDS.map(({ id, label, placeholder }) => (
+            <label key={id}>
+              <span>{label}</span>
+              <input
+                type="url"
+                placeholder={placeholder}
+                value={getText(profile, id)}
+                onChange={(e) => update(id, e.target.value)}
+              />
             </label>
           ))}
         </fieldset>

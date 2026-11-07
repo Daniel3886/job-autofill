@@ -86,6 +86,23 @@ describe("matchInputs", () => {
   });
 });
 
+describe("profile links", () => {
+  it("matches LinkedIn, GitHub and portfolio fields by label or name", () => {
+    expect(
+      matchedIds(`
+        <label for="l1">Profil LinkedIn</label><input id="l1" type="url">
+        <label for="l2">Link do GitHub</label><input id="l2">
+        <label for="l3">Portfolio / strona www</label><input id="l3">
+        <input name="linkedin_url" id="l4">
+      `),
+    ).toEqual({ l1: "linkedin", l2: "github", l3: "website" });
+  });
+
+  it("does not treat a generic URL field as a profile link", () => {
+    expect(matchedIds(`<label for="u">Link do ogłoszenia</label><input id="u" type="url">`)).toEqual({});
+  });
+});
+
 describe("collectTextInputs", () => {
   it("skips non-text, disabled, readonly and already-filled inputs", () => {
     const inputs = render(`

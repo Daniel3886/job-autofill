@@ -5,7 +5,10 @@
     "email": { "labels": ["email", "e-mail", "mail"] },
     "phone": { "labels": ["phone", "telephone", "mobile", "phone number"], "attributes": ["tel", "phonenumber", "mobilephone"] },
     "city": { "labels": ["city", "town", "location"] },
-    "salary": { "labels": ["salary", "expected salary", "salary expectations", "compensation"] }
+    "salary": { "labels": ["salary", "expected salary", "salary expectations", "compensation"] },
+    "linkedin": { "labels": ["linkedin", "linked in"], "attributes": ["linkedin"] },
+    "github": { "labels": ["github", "git hub"], "attributes": ["github"] },
+    "website": { "labels": ["portfolio", "website", "personal website", "www"], "attributes": ["portfolio", "website"] }
   },
   "questions": {
     "availability": ["availability", "notice period", "start date", "when can you start"],

@@ -1,6 +1,15 @@
 import { words } from "./locales";
 
-export type TextFieldId = "firstName" | "lastName" | "email" | "phone" | "city" | "salary";
+export type TextFieldId =
+  | "firstName"
+  | "lastName"
+  | "email"
+  | "phone"
+  | "city"
+  | "salary"
+  | "linkedin"
+  | "github"
+  | "website";
 
 export interface FieldRule {
   id: TextFieldId;
@@ -26,4 +35,7 @@ export const FIELD_RULES: FieldRule[] = [
   { id: "phone", autocomplete: ["tel", "tel-national", "tel-local"], inputTypes: ["tel"], ...localeWords("phone") },
   { id: "city", autocomplete: ["address-level2"], inputTypes: [], ...localeWords("city") },
   { id: "salary", autocomplete: [], inputTypes: [], ...localeWords("salary") },
+  { id: "linkedin", autocomplete: [], inputTypes: [], ...localeWords("linkedin") },
+  { id: "github", autocomplete: [], inputTypes: [], ...localeWords("github") },
+  { id: "website", autocomplete: [], inputTypes: [], ...localeWords("website") },
 ];

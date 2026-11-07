@@ -1,6 +1,6 @@
 import type { TextLike } from "../signals";
 
-const FILLABLE_TYPES = new Set(["text", "email", "tel", "number", "search", ""]);
+const FILLABLE_TYPES = new Set(["text", "email", "tel", "url", "number", "search", ""]);
 
 export function isFillableText(el: TextLike, checkVisibility: boolean): boolean {
   if (el instanceof HTMLInputElement) {

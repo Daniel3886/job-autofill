@@ -5,7 +5,8 @@
     "email": { "labels": ["adres email", "adres e-mail"] },
     "phone": { "labels": ["telefon", "numer telefonu", "komórka"] },
     "city": { "labels": ["miasto", "miejscowość", "lokalizacja"] },
-    "salary": { "labels": ["wynagrodzenie", "oczekiwania finansowe", "stawka"] }
+    "salary": { "labels": ["wynagrodzenie", "oczekiwania finansowe", "stawka"] },
+    "website": { "labels": ["strona www", "strona internetowa"] }
   },
   "questions": {
     "availability": ["dostępność", "okres wypowiedzenia", "od kiedy", "kiedy możesz zacząć"],
