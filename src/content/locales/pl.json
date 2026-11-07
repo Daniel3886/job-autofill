@@ -75,6 +75,7 @@
     "keywords": ["życiorys"],
     "otherDocuments": ["list motywacyjny", "certyfikat"]
   },
+  "placePrefixes": ["województwo", "woj"],
   "places": [
     ["Warszawa", "Warsaw"],
     ["Kraków", "Cracow"],

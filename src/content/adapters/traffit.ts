@@ -1,4 +1,5 @@
 import { classifyQuestion } from "../choices/choiceRules";
+import { classifyPlaceQuestion } from "../choices/places";
 import { isFillableText } from "../drivers/text";
 import type { TextFieldId } from "../fieldRules";
 import type { TextLike } from "../signals";
@@ -53,7 +54,7 @@ export const traffitAdapter: VendorAdapter = {
         continue;
       }
 
-      const fieldId = classifyQuestion(question);
+      const fieldId = classifyQuestion(question) ?? classifyPlaceQuestion(question);
       if (!fieldId) continue;
       ctx.claimedFields.add(fieldId);
       targets.push({ kind: "select", fieldId, question, element: select });

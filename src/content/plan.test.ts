@@ -279,6 +279,51 @@ describe("chooseLocation", () => {
   });
 });
 
+describe("province and country dropdowns", () => {
+  const PLACES = `
+    <label for="w">Województwo *</label>
+    <select id="w"><option value="">Wybierz</option><option value="7">woj. małopolskie</option><option value="14">woj. mazowieckie</option></select>
+    <label for="k">Kraj</label>
+    <select id="k"><option value="">--</option><option value="DE">Niemcy</option><option value="PL">Polska</option></select>`;
+
+  const PLACE_PROFILE: Profile = { version: 1, values: { region: "Mazowieckie", country: "Polska" } };
+
+  it("picks the option with the saved name, ignoring a woj. prefix", async () => {
+    await fill(PLACES, PLACE_PROFILE);
+    expect($<HTMLSelectElement>("#w").value).toBe("14");
+    expect($<HTMLSelectElement>("#k").value).toBe("PL");
+  });
+
+  it("leaves the dropdown alone when no option has the saved name", async () => {
+    await fill(PLACES, { version: 1, values: { region: "Mazovia", country: "Poland" } });
+    expect($<HTMLSelectElement>("#w").value).toBe("");
+    expect($<HTMLSelectElement>("#k").value).toBe("");
+  });
+
+  it("fills a Selectize province dropdown", async () => {
+    const bridge: MainWorldBridge = {
+      readSelectize: vi.fn(async (targets: string[]) => ({
+        [targets[0]]: {
+          multiple: false,
+          hasValue: false,
+          options: [
+            { value: "a", text: "Województwo łódzkie" },
+            { value: "b", text: "Województwo mazowieckie" },
+          ],
+        },
+      })),
+      setSelectize: vi.fn(async (items) => items.length),
+      searchSelectize: vi.fn(async () => null),
+    };
+    await fill(
+      `<label for="s">Województwo</label><select id="s" class="selectized" style="display:none"></select><div class="selectize-control single"></div>`,
+      PLACE_PROFILE,
+      bridge,
+    );
+    expect(bridge.setSelectize).toHaveBeenCalledWith([{ target: $("#s").getAttribute("data-job-autofill-target"), values: ["b"] }]);
+  });
+});
+
 const radios = (name: string, question: string, answers: string[]) => `
   <div class="question">
     <div class="title">${question} *</div>

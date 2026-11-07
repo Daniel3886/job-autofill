@@ -12,6 +12,7 @@ export interface Locale {
   salaryRanges?: { below?: string[]; above?: string[] };
   cv?: { keywords?: string[]; otherDocuments?: string[] };
   places?: string[][];
+  placePrefixes?: string[];
 }
 
 export const LOCALES: Locale[] = [en, pl];

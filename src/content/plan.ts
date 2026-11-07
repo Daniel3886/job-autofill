@@ -4,6 +4,7 @@ import { TARGET_ATTR, type SelectizeInfo, type SelectizeSetItem } from "../share
 import type { FieldTarget } from "./adapters/types";
 import { CHOICE_RULE_BY_ID } from "./choices/choiceRules";
 import { LANGUAGE_LEVEL_RULE } from "./choices/languages";
+import { isPlaceField, matchPlaceOption } from "./choices/places";
 import { chooseChoiceOptions, type ChoiceOption } from "./choices/optionMatch";
 import { matchSalaryOption, salaryAmount, salaryText } from "./choices/salary";
 import { acceptsFile, setFileInput } from "./drivers/file";
@@ -106,6 +107,10 @@ function choose(t: FieldTarget, options: ChoiceOption[], multiple: boolean, prof
     const code = t.fieldId.slice("language:".length);
     const level = getLanguages(profile).find((l) => l.language === code)?.level;
     return level ? chooseChoiceOptions(LANGUAGE_LEVEL_RULE, [level], options, multiple) : null;
+  }
+  if (isPlaceField(t.fieldId)) {
+    const option = matchPlaceOption(getText(profile, t.fieldId), options);
+    return option ? [option.value] : null;
   }
   const rule = CHOICE_RULE_BY_ID.get(t.fieldId);
   if (!rule) return null;
