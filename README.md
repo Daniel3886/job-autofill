@@ -6,7 +6,7 @@ A Chromium extension (Manifest V3) that fills job application forms with your sa
 
 - **Text fields and textareas:** first name, last name, email, phone, city, country, and salary.
 - **Choice questions** (native selects, Selectize dropdowns, radio groups): English level, availability, contract types, work mode, and salary buckets.
-- **Traffit location dropdowns:** the country and city search boxes. The extension searches for your saved country, then your city, and picks the result whose name matches. A country the form already selected is kept.
+- **Traffit location dropdowns:** the country and city search boxes. The extension searches for your saved country, then your city, and picks the result whose name matches. The country can be saved in English or Polish, or as a code such as PL. English city names such as Warsaw, and names typed without ł such as Wroclaw, are looked up by their Polish spelling. A country the form already selected is kept.
 - **CV upload:** file inputs labelled CV, resume, or życiorys get your saved CV. Inputs for a cover letter or portfolio are left alone, and so is any input whose `accept` attribute excludes your file type.
 
 A choice is filled only when exactly one option on the page matches your answer. Anything ambiguous, such as "hybrid" on a form with four hybrid options or a salary between two buckets, is left for you. Inputs that already have a value are never overwritten.

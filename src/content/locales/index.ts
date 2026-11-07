@@ -11,6 +11,7 @@ export interface Locale {
   salary?: Record<string, string[]>;
   salaryRanges?: { below?: string[]; above?: string[] };
   cv?: { keywords?: string[]; otherDocuments?: string[] };
+  places?: string[][];
 }
 
 export const LOCALES: Locale[] = [en, pl];

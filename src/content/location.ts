@@ -1,6 +1,7 @@
 import { getText, type Profile } from "../shared/profile";
 import type { SelectizeInfo } from "../shared/messages";
 import type { FieldTarget, LocationFieldId } from "./adapters/types";
+import { LOCALES } from "./locales";
 import { tagElement, type MainWorldBridge } from "./plan";
 import { containsPhrase, normalize } from "./text";
 
@@ -51,10 +52,16 @@ export function countryNames(saved: string, languages: string[]): string[] {
   return unique([saved, ...translated]);
 }
 
+export function cityNames(saved: string): string[] {
+  const q = normalize(saved);
+  const place = LOCALES.flatMap((l) => l.places ?? []).find((names) => names.some((n) => normalize(n) === q));
+  return unique([saved, ...(place ?? [])]);
+}
+
 function unique(names: string[]): string[] {
   const seen = new Set<string>();
   return names.filter((name) => {
-    const key = normalize(name);
+    const key = name.trim().toLocaleLowerCase();
     if (!key || seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -100,7 +107,7 @@ export async function fillLocations(targets: FieldTarget[], profile: Profile, br
   for (const t of locations) {
     const saved = getText(profile, t.fieldId);
     if (!saved) continue;
-    const names = t.fieldId === "country" ? country : [saved];
+    const names = t.fieldId === "country" ? country : cityNames(saved);
     const tag = tagElement(t.element);
 
     for (const query of names) {

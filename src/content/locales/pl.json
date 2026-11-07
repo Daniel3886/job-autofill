@@ -73,5 +73,22 @@
   "cv": {
     "keywords": ["życiorys"],
     "otherDocuments": ["list motywacyjny", "certyfikat"]
-  }
+  },
+  "places": [
+    ["Warszawa", "Warsaw"],
+    ["Kraków", "Cracow"],
+    ["Wrocław"],
+    ["Łódź"],
+    ["Białystok"],
+    ["Bielsko-Biała"],
+    ["Bełchatów"],
+    ["Elbląg"],
+    ["Ełk"],
+    ["Głogów"],
+    ["Łomża"],
+    ["Płock"],
+    ["Słupsk"],
+    ["Wałbrzych"],
+    ["Włocławek"]
+  ]
 }

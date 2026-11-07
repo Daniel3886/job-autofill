@@ -25,6 +25,10 @@ describe.each([
     for (const level of Object.keys(locale.levels ?? {})) expect(LANGUAGE_LEVELS.map((l) => l.value)).toContain(level);
   });
 
+  it("lists every place with at least one name", () => {
+    for (const names of locale.places ?? []) expect(names.length).toBeGreaterThan(0);
+  });
+
   it("has a name for every supported language", () => {
     for (const { code } of LANGUAGES) expect(locale.languages?.[code]?.length, code).toBeGreaterThan(0);
   });

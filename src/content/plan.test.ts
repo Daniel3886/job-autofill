@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Profile } from "../shared/profile";
 import type { SelectizeInfo } from "../shared/messages";
 import { collectTargets } from "./adapters";
-import { chooseLocation, countryCode, countryNames, fillLocations } from "./location";
+import { chooseLocation, cityNames, countryCode, countryNames, fillLocations } from "./location";
 import { executeActions, planFills, type MainWorldBridge } from "./plan";
 
 const PROFILE: Profile = {
@@ -275,6 +275,16 @@ describe("country names", () => {
   it("lists the saved name first, then its translations", () => {
     expect(countryNames("Germany", ["pl", "en"])).toEqual(["Germany", "Niemcy"]);
     expect(countryNames("Narnia", ["pl", "en"])).toEqual(["Narnia"]);
+  });
+});
+
+describe("city names", () => {
+  it("adds the Polish spelling for English names and names typed without ł", () => {
+    expect(cityNames("Warsaw")).toEqual(["Warsaw", "Warszawa"]);
+    expect(cityNames("Wroclaw")).toEqual(["Wroclaw", "Wrocław"]);
+    expect(cityNames("lodz")).toEqual(["lodz", "Łódź"]);
+    expect(cityNames("Kraków")).toEqual(["Kraków", "Cracow"]);
+    expect(cityNames("Gdynia")).toEqual(["Gdynia"]);
   });
 });
 
