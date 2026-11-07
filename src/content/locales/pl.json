@@ -58,8 +58,12 @@
   },
   "salary": {
     "hourly": ["godz", "godzinę", "godzinowa", "godzinowe"],
-    "b2b": ["netto", "faktura"],
-    "uop": ["brutto", "umowa o pracę"]
+    "yearly": ["rok", "rocznie", "roczne", "roczna"],
+    "net": ["netto"],
+    "gross": ["brutto"],
+    "b2b": ["faktura"],
+    "uop": ["umowa o pracę"],
+    "civil": ["umowa cywilnoprawna", "zlecenie", "umowa zlecenie", "dzieło", "umowa o dzieło"]
   },
   "salaryRanges": {
     "below": ["poniżej", "do"],

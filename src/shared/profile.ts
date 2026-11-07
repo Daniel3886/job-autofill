@@ -9,6 +9,7 @@ export interface Profile {
   version: 1;
   values: Record<string, ProfileValue>;
   languages?: LanguageSkill[];
+  salaries?: SalaryExpectation[];
 }
 
 export const LANGUAGES = [
@@ -53,13 +54,39 @@ export const LINK_FIELDS = [
   { id: "website", label: "Portfolio or website", placeholder: "https://…" },
 ] as const;
 
-export const SALARY_FIELDS = [
-  { id: "salaryMonthlyGrossUop", label: "Monthly, gross, employment contract (UoP)" },
-  { id: "salaryMonthlyNetB2b", label: "Monthly, net, B2B" },
-  { id: "salaryHourlyNetB2b", label: "Hourly, net, B2B" },
-] as const;
+export type SalaryContract = "uop" | "b2b" | "civil";
+export type SalaryPeriod = "hour" | "month" | "year";
+export type SalaryBasis = "net" | "gross";
 
-export type SalaryFieldId = (typeof SALARY_FIELDS)[number]["id"];
+export interface SalaryExpectation {
+  amount: string;
+  contract: SalaryContract;
+  period: SalaryPeriod;
+  basis: SalaryBasis;
+}
+
+export const SALARY_CONTRACTS: { value: SalaryContract; label: string }[] = [
+  { value: "b2b", label: "B2B" },
+  { value: "uop", label: "UoP (employment)" },
+  { value: "civil", label: "Zlecenie / dzieło" },
+];
+
+export const SALARY_PERIODS: { value: SalaryPeriod; label: string }[] = [
+  { value: "hour", label: "per hour" },
+  { value: "month", label: "per month" },
+  { value: "year", label: "per year" },
+];
+
+export const SALARY_BASES: { value: SalaryBasis; label: string }[] = [
+  { value: "net", label: "net" },
+  { value: "gross", label: "gross" },
+];
+
+export const LEGACY_SALARY_KEYS: [string, Omit<SalaryExpectation, "amount">][] = [
+  ["salaryMonthlyGrossUop", { contract: "uop", period: "month", basis: "gross" }],
+  ["salaryMonthlyNetB2b", { contract: "b2b", period: "month", basis: "net" }],
+  ["salaryHourlyNetB2b", { contract: "b2b", period: "hour", basis: "net" }],
+];
 
 export interface ChoiceField {
   id: string;
@@ -125,8 +152,16 @@ export function getLanguages(profile: Profile): LanguageSkill[] {
   return legacyEnglish ? [{ language: "en", level: legacyEnglish }] : [];
 }
 
+export function getSalaries(profile: Profile): SalaryExpectation[] {
+  if (profile.salaries) return profile.salaries;
+  return LEGACY_SALARY_KEYS.flatMap(([key, shape]) => {
+    const amount = getText(profile, key);
+    return amount ? [{ amount, ...shape }] : [];
+  });
+}
+
 export function hasAnyValue(profile: Profile): boolean {
-  if (getLanguages(profile).length > 0) return true;
+  if (getLanguages(profile).length > 0 || getSalaries(profile).length > 0) return true;
   return Object.values(profile.values).some((v) =>
     Array.isArray(v) ? v.length > 0 : v.trim() !== "",
   );

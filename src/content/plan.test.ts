@@ -15,9 +15,11 @@ const PROFILE: Profile = {
     availability: "2w",
     contractTypes: ["b2b"],
     workMode: ["hybrid", "remote"],
-    salaryMonthlyNetB2b: "15000",
-    salaryHourlyNetB2b: "120",
   },
+  salaries: [
+    { amount: "15000", contract: "b2b", period: "month", basis: "net" },
+    { amount: "120", contract: "b2b", period: "hour", basis: "net" },
+  ],
   languages: [
     { language: "en", level: "C1" },
     { language: "de", level: "B1" },

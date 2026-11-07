@@ -1,36 +1,54 @@
-import { getList, getText, type Profile, type SalaryFieldId } from "../../shared/profile";
+import { getSalaries, type Profile, type SalaryContract, type SalaryExpectation, type SalaryPeriod } from "../../shared/profile";
 import { words } from "../locales";
 import { containsPhrase, normalize } from "../text";
 import type { ChoiceOption } from "./optionMatch";
 
 const HOURLY = words((l) => l.salary?.hourly);
-const B2B = words((l) => l.salary?.b2b);
-const UOP = words((l) => l.salary?.uop);
+const YEARLY = words((l) => l.salary?.yearly);
+const CONTRACT_WORDS: Record<SalaryContract, string[]> = {
+  b2b: words((l) => l.salary?.b2b),
+  uop: words((l) => l.salary?.uop),
+  civil: words((l) => l.salary?.civil),
+};
+const NET = words((l) => l.salary?.net);
+const GROSS = words((l) => l.salary?.gross);
 
-export function salaryFieldFor(question: string, profile: Profile): SalaryFieldId | null {
+export function questionPeriod(question: string): SalaryPeriod {
+  if (HOURLY.some((w) => containsPhrase(question, w))) return "hour";
+  if (YEARLY.some((w) => containsPhrase(question, w))) return "year";
+  return "month";
+}
+
+export function salaryFor(question: string, profile: Profile): SalaryExpectation | null {
   const has = (words: string[]) => words.some((w) => containsPhrase(question, w));
-  if (has(HOURLY)) return "salaryHourlyNetB2b";
+  const period = questionPeriod(question);
+  const contracts = (Object.keys(CONTRACT_WORDS) as SalaryContract[]).filter((c) => has(CONTRACT_WORDS[c]));
+  const net = has(NET);
+  const gross = has(GROSS);
 
-  const b2b = has(B2B);
-  const uop = has(UOP);
-  if (b2b && !uop) return "salaryMonthlyNetB2b";
-  if (uop && !b2b) return "salaryMonthlyGrossUop";
+  const candidates = getSalaries(profile).filter(
+    (s) =>
+      parseAmount(s.amount) !== null &&
+      s.period === period &&
+      (contracts.length === 0 || contracts.includes(s.contract)) &&
+      (net === gross || s.basis === (net ? "net" : "gross")),
+  );
+  return candidates.length === 1 ? candidates[0] : null;
+}
 
-  const contracts = getList(profile, "contractTypes");
-  if (contracts.length === 1 && contracts[0] === "b2b") return "salaryMonthlyNetB2b";
-  if (contracts.length === 1 && contracts[0] === "uop") return "salaryMonthlyGrossUop";
-  return null;
+export function parseAmount(raw: string): number | null {
+  const cleaned = raw.replace(/\s/g, "").replace(",", ".");
+  const n = Number(cleaned);
+  return cleaned !== "" && Number.isFinite(n) && n > 0 ? n : null;
 }
 
 export function salaryText(question: string, profile: Profile): string {
-  const field = salaryFieldFor(question, profile);
-  return field ? getText(profile, field) : "";
+  return salaryFor(question, profile)?.amount.trim() ?? "";
 }
 
 export function salaryAmount(question: string, profile: Profile): number | null {
-  const raw = salaryText(question, profile).replace(/[\s,]/g, "");
-  const n = Number(raw);
-  return raw !== "" && Number.isFinite(n) && n > 0 ? n : null;
+  const salary = salaryFor(question, profile);
+  return salary ? parseAmount(salary.amount) : null;
 }
 
 export interface SalaryRange {

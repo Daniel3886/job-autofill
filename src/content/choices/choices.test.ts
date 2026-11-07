@@ -1,14 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { Profile } from "../../shared/profile";
+import type { Profile, SalaryExpectation } from "../../shared/profile";
 import { CHOICE_RULE_BY_ID, classifyQuestion } from "./choiceRules";
 import { LANGUAGE_LEVEL_RULE } from "./languages";
 import { chooseChoiceOptions } from "./optionMatch";
-import { matchSalaryOption, parseSalaryRange, salaryFieldFor } from "./salary";
+import { matchSalaryOption, parseAmount, parseSalaryRange, salaryFor } from "./salary";
 import { normalize } from "../text";
 
 const opts = (texts: string[]) => texts.map((text, i) => ({ value: String(i), text }));
 const rule = (id: string) => CHOICE_RULE_BY_ID.get(id)!;
-const profile = (values: Profile["values"]): Profile => ({ version: 1, values });
 
 const TRAFFIT_AVAILABILITY = opts([
   'a) "od zaraz"',
@@ -116,16 +115,46 @@ describe("salary", () => {
     expect(matchSalaryOption(40000, TRAFFIT_SALARY)?.value).toBe("5");
   });
 
-  it("reads the unit and contract from the question", () => {
-    const p = profile({});
-    expect(salaryFieldFor(normalize("Podaj oczekiwania finansowe B2B (zł/h netto)"), p)).toBe("salaryHourlyNetB2b");
-    expect(salaryFieldFor(normalize("Wynagrodzenie brutto (UoP)"), p)).toBe("salaryMonthlyGrossUop");
-    expect(salaryFieldFor(normalize("Expected salary, net B2B"), p)).toBe("salaryMonthlyNetB2b");
+  const row = (
+    amount: string,
+    contract: SalaryExpectation["contract"],
+    period: SalaryExpectation["period"],
+    basis: SalaryExpectation["basis"],
+  ): SalaryExpectation => ({ amount, contract, period, basis });
+  const rows = (...salaries: SalaryExpectation[]): Profile => ({ version: 1, values: {}, salaries });
+  const pick = (question: string, p: Profile) => salaryFor(normalize(question), p)?.amount ?? null;
+
+  it("picks the row matching the question's period, contract and net/gross", () => {
+    const p = rows(
+      row("95", "b2b", "hour", "net"),
+      row("15000", "b2b", "month", "net"),
+      row("14000", "uop", "month", "gross"),
+    );
+    expect(pick("Podaj oczekiwania finansowe B2B (zł/h netto)", p)).toBe("95");
+    expect(pick("Wynagrodzenie brutto (UoP)", p)).toBe("14000");
+    expect(pick("Expected salary, net B2B", p)).toBe("15000");
   });
 
-  it("uses the only accepted contract when the question names both", () => {
-    const q = normalize("Oczekiwania finansowe (brutto UoP, netto B2B)");
-    expect(salaryFieldFor(q, profile({ contractTypes: ["b2b"] }))).toBe("salaryMonthlyNetB2b");
-    expect(salaryFieldFor(q, profile({ contractTypes: ["uop", "b2b"] }))).toBeNull();
+  it("reads yearly questions and skips them without a yearly row", () => {
+    expect(pick("Oczekiwane wynagrodzenie roczne brutto", rows(row("14000", "uop", "month", "gross")))).toBeNull();
+    expect(pick("Expected annual salary (gross)", rows(row("180000", "uop", "year", "gross")))).toBe("180000");
+  });
+
+  it("uses the only fitting row when the question names both contracts", () => {
+    const q = "Oczekiwania finansowe (brutto UoP, netto B2B)";
+    expect(pick(q, rows(row("15000", "b2b", "month", "net")))).toBe("15000");
+    expect(pick(q, rows(row("15000", "b2b", "month", "net"), row("14000", "uop", "month", "gross")))).toBeNull();
+  });
+
+  it("reads salaries saved by the previous version", () => {
+    const legacy: Profile = { version: 1, values: { salaryHourlyNetB2b: "120" } };
+    expect(pick("Stawka B2B netto zł/h", legacy)).toBe("120");
+  });
+
+  it("parses amounts with spaces and decimal commas", () => {
+    expect(parseAmount("15 000")).toBe(15000);
+    expect(parseAmount("95,5")).toBe(95.5);
+    expect(parseAmount("")).toBeNull();
+    expect(parseAmount("abc")).toBeNull();
   });
 });

@@ -5,15 +5,20 @@ import {
   LANGUAGES,
   LANGUAGE_LEVELS,
   LINK_FIELDS,
-  SALARY_FIELDS,
+  LEGACY_SALARY_KEYS,
+  SALARY_BASES,
+  SALARY_CONTRACTS,
+  SALARY_PERIODS,
   TEXT_FIELDS,
   getLanguages,
+  getSalaries,
   getList,
   getText,
   type ChoiceField,
   type LanguageSkill,
   type Profile,
   type ProfileValue,
+  type SalaryExpectation,
 } from "../shared/profile";
 import { profileStore } from "../shared/profileStore";
 
@@ -40,7 +45,7 @@ export function App() {
   useEffect(() => {
     profileStore
       .get()
-      .then((p) => setProfile({ ...p, languages: getLanguages(p) }))
+      .then((p) => setProfile({ ...p, languages: getLanguages(p), salaries: getSalaries(p) }))
       .catch(() => setLoadFailed(true));
   }, []);
 
@@ -52,14 +57,20 @@ export function App() {
     setProfile((p) => (p ? { ...p, languages } : p));
   }
 
+  function updateSalaries(salaries: SalaryExpectation[]) {
+    setProfile((p) => (p ? { ...p, salaries } : p));
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!profile) return;
     setSaving(true);
-    const { englishLevel: _legacy, ...values } = profile.values;
+    const values = { ...profile.values };
+    for (const key of ["englishLevel", ...LEGACY_SALARY_KEYS.map(([k]) => k)]) delete values[key];
     const languages = (profile.languages ?? []).filter((l) => l.level !== "");
+    const salaries = (profile.salaries ?? []).filter((s) => s.amount.trim() !== "");
     try {
-      await profileStore.save({ ...profile, values, languages });
+      await profileStore.save({ ...profile, values, languages, salaries });
       showToast("success", "Profile saved");
     } catch {
       showToast("error", "Could not save your profile. Try again.");
@@ -122,21 +133,7 @@ export function App() {
           ))}
         </fieldset>
 
-        <fieldset>
-          <legend>Salary expectations (PLN)</legend>
-          <p className="hint">Filled only when the form asks for that exact unit and contract type.</p>
-          {SALARY_FIELDS.map(({ id, label }) => (
-            <label key={id}>
-              <span>{label}</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={getText(profile, id)}
-                onChange={(e) => update(id, e.target.value)}
-              />
-            </label>
-          ))}
-        </fieldset>
+        <SalarySection salaries={profile.salaries ?? []} onChange={updateSalaries} />
 
         <div className="actions">
           <button type="submit" disabled={saving}>
@@ -329,6 +326,94 @@ function CvSection({ showToast }: { showToast: ShowToast }) {
         <span>{cv ? "Replace file" : "Choose file"}</span>
         <input id="cv-file" type="file" accept={CV_ACCEPT} onChange={onPick} />
       </label>
+    </fieldset>
+  );
+}
+
+function SalarySection({
+  salaries,
+  onChange,
+}: {
+  salaries: SalaryExpectation[];
+  onChange: (salaries: SalaryExpectation[]) => void;
+}) {
+  function updateRow(index: number, patch: Partial<SalaryExpectation>) {
+    onChange(salaries.map((s, i) => (i === index ? { ...s, ...patch } : s)));
+  }
+
+  return (
+    <fieldset>
+      <legend>Salary expectations (PLN)</legend>
+      <p className="hint">
+        Filled only when a form asks for the same contract, period, and net or gross as one of your rows.
+      </p>
+      {salaries.length === 0 && <p className="empty">No salary expectations added yet.</p>}
+      {salaries.map((row, index) => (
+        <div className="salary-row" key={index}>
+          <label className="amount">
+            <span>Amount</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={row.amount}
+              onChange={(e) => updateRow(index, { amount: e.target.value })}
+            />
+          </label>
+          <label>
+            <span>Contract</span>
+            <select
+              value={row.contract}
+              onChange={(e) => updateRow(index, { contract: e.target.value as SalaryExpectation["contract"] })}
+            >
+              {SALARY_CONTRACTS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Period</span>
+            <select
+              value={row.period}
+              onChange={(e) => updateRow(index, { period: e.target.value as SalaryExpectation["period"] })}
+            >
+              {SALARY_PERIODS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Net / gross</span>
+            <select
+              value={row.basis}
+              onChange={(e) => updateRow(index, { basis: e.target.value as SalaryExpectation["basis"] })}
+            >
+              {SALARY_BASES.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => onChange(salaries.filter((_, i) => i !== index))}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="secondary add"
+        onClick={() => onChange([...salaries, { amount: "", contract: "b2b", period: "month", basis: "net" }])}
+      >
+        + Add salary
+      </button>
     </fieldset>
   );
 }

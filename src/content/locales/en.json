@@ -62,8 +62,12 @@
   },
   "salary": {
     "hourly": ["h", "hour", "hourly", "per hour"],
-    "b2b": ["b2b", "net", "invoice"],
-    "uop": ["uop", "gross"]
+    "yearly": ["year", "yearly", "annual", "annually", "per annum"],
+    "net": ["net"],
+    "gross": ["gross"],
+    "b2b": ["b2b", "invoice"],
+    "uop": ["uop", "employment contract"],
+    "civil": []
   },
   "salaryRanges": {
     "below": ["below", "under", "less than", "up to"],

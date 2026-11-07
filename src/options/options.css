@@ -285,3 +285,27 @@ button.add {
     animation: none;
   }
 }
+
+.salary-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 0.8fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.salary-row select,
+.salary-row input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .salary-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .salary-row .amount,
+  .salary-row button {
+    grid-column: 1 / -1;
+  }
+}
