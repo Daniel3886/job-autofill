@@ -67,14 +67,14 @@ export interface SalaryExpectation {
 
 export const SALARY_CONTRACTS: { value: SalaryContract; label: string }[] = [
   { value: "b2b", label: "B2B" },
-  { value: "uop", label: "UoP (employment)" },
+  { value: "uop", label: "UoP" },
   { value: "civil", label: "Zlecenie / dzieło" },
 ];
 
 export const SALARY_PERIODS: { value: SalaryPeriod; label: string }[] = [
-  { value: "hour", label: "per hour" },
-  { value: "month", label: "per month" },
-  { value: "year", label: "per year" },
+  { value: "hour", label: "hourly" },
+  { value: "month", label: "monthly" },
+  { value: "year", label: "yearly" },
 ];
 
 export const SALARY_BASES: { value: SalaryBasis; label: string }[] = [

@@ -1,4 +1,5 @@
 import { getSalaries, type Profile, type SalaryContract, type SalaryExpectation, type SalaryPeriod } from "../../shared/profile";
+import { parseAmount } from "../../shared/salary";
 import { words } from "../locales";
 import { containsPhrase, normalize } from "../text";
 import type { ChoiceOption } from "./optionMatch";
@@ -34,12 +35,6 @@ export function salaryFor(question: string, profile: Profile): SalaryExpectation
       (net === gross || s.basis === (net ? "net" : "gross")),
   );
   return candidates.length === 1 ? candidates[0] : null;
-}
-
-export function parseAmount(raw: string): number | null {
-  const cleaned = raw.replace(/\s/g, "").replace(",", ".");
-  const n = Number(cleaned);
-  return cleaned !== "" && Number.isFinite(n) && n > 0 ? n : null;
 }
 
 export function salaryText(question: string, profile: Profile): string {

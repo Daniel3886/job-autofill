@@ -3,7 +3,7 @@ import type { Profile, SalaryExpectation } from "../../shared/profile";
 import { CHOICE_RULE_BY_ID, classifyQuestion } from "./choiceRules";
 import { LANGUAGE_LEVEL_RULE } from "./languages";
 import { chooseChoiceOptions } from "./optionMatch";
-import { matchSalaryOption, parseAmount, parseSalaryRange, salaryFor } from "./salary";
+import { matchSalaryOption, parseSalaryRange, salaryFor } from "./salary";
 import { normalize } from "../text";
 
 const opts = (texts: string[]) => texts.map((text, i) => ({ value: String(i), text }));
@@ -149,12 +149,5 @@ describe("salary", () => {
   it("reads salaries saved by the previous version", () => {
     const legacy: Profile = { version: 1, values: { salaryHourlyNetB2b: "120" } };
     expect(pick("Stawka B2B netto zł/h", legacy)).toBe("120");
-  });
-
-  it("parses amounts with spaces and decimal commas", () => {
-    expect(parseAmount("15 000")).toBe(15000);
-    expect(parseAmount("95,5")).toBe(95.5);
-    expect(parseAmount("")).toBeNull();
-    expect(parseAmount("abc")).toBeNull();
   });
 });

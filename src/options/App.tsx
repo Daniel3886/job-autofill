@@ -21,6 +21,7 @@ import {
   type SalaryExpectation,
 } from "../shared/profile";
 import { profileStore } from "../shared/profileStore";
+import { HOURS_PER_MONTH, convertAmount, formatAmount, parseAmount } from "../shared/salary";
 
 interface ToastMessage {
   kind: "success" | "error";
@@ -337,8 +338,42 @@ function SalarySection({
   salaries: SalaryExpectation[];
   onChange: (salaries: SalaryExpectation[]) => void;
 }) {
+  const [notes, setNotes] = useState<Record<number, string>>({});
+
   function updateRow(index: number, patch: Partial<SalaryExpectation>) {
     onChange(salaries.map((s, i) => (i === index ? { ...s, ...patch } : s)));
+  }
+
+  function setNote(index: number, note: string | null) {
+    setNotes((n) => {
+      const next = { ...n };
+      if (note) next[index] = note;
+      else delete next[index];
+      return next;
+    });
+  }
+
+  function changeAmount(index: number, amount: string) {
+    updateRow(index, { amount });
+    setNote(index, null);
+  }
+
+  function changePeriod(index: number, period: SalaryExpectation["period"]) {
+    const row = salaries[index];
+    const amount = parseAmount(row.amount);
+    if (amount === null || period === row.period) {
+      updateRow(index, { period });
+      return;
+    }
+    const converted = formatAmount(convertAmount(amount, row.period, period), period);
+    updateRow(index, { period, amount: converted });
+    const from = SALARY_PERIODS.find((p) => p.value === row.period)?.label;
+    setNote(index, `Converted from ${row.amount} ${from} at ${HOURS_PER_MONTH} working hours a month. Adjust if needed.`);
+  }
+
+  function removeRow(index: number) {
+    onChange(salaries.filter((_, i) => i !== index));
+    setNotes({});
   }
 
   return (
@@ -356,7 +391,7 @@ function SalarySection({
               type="text"
               inputMode="decimal"
               value={row.amount}
-              onChange={(e) => updateRow(index, { amount: e.target.value })}
+              onChange={(e) => changeAmount(index, e.target.value)}
             />
           </label>
           <label>
@@ -376,7 +411,7 @@ function SalarySection({
             <span>Period</span>
             <select
               value={row.period}
-              onChange={(e) => updateRow(index, { period: e.target.value as SalaryExpectation["period"] })}
+              onChange={(e) => changePeriod(index, e.target.value as SalaryExpectation["period"])}
             >
               {SALARY_PERIODS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -398,13 +433,10 @@ function SalarySection({
               ))}
             </select>
           </label>
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => onChange(salaries.filter((_, i) => i !== index))}
-          >
+          <button type="button" className="secondary" onClick={() => removeRow(index)}>
             Remove
           </button>
+          {notes[index] && <p className="row-note">{notes[index]}</p>}
         </div>
       ))}
       <button
