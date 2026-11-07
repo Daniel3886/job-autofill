@@ -16,7 +16,11 @@ const CV: StoredFile = {
 };
 
 const PROFILE: Profile = { version: 1, values: { firstName: "Jan" } };
-const bridge: MainWorldBridge = { readSelectize: async () => ({}), setSelectize: async () => 0 };
+const bridge: MainWorldBridge = {
+  readSelectize: async () => ({}),
+  setSelectize: async () => 0,
+  searchSelectize: async () => null,
+};
 
 async function plan(html: string, cv: StoredFile | null = CV) {
   document.body.innerHTML = html;

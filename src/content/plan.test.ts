@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Profile } from "../shared/profile";
 import type { SelectizeInfo } from "../shared/messages";
 import { collectTargets } from "./adapters";
+import { chooseLocation, fillLocations } from "./location";
 import { executeActions, planFills, type MainWorldBridge } from "./plan";
 
 const PROFILE: Profile = {
@@ -12,6 +13,7 @@ const PROFILE: Profile = {
     email: "daniel@example.com",
     phone: "123456789",
     city: "Warszawa",
+    country: "Polska",
     availability: "2w",
     contractTypes: ["b2b"],
     workMode: ["hybrid", "remote"],
@@ -27,14 +29,18 @@ const PROFILE: Profile = {
 };
 
 function noMainWorld(): MainWorldBridge {
-  return { readSelectize: vi.fn(async () => ({})), setSelectize: vi.fn(async () => 0) };
+  return {
+    readSelectize: vi.fn(async () => ({})),
+    setSelectize: vi.fn(async () => 0),
+    searchSelectize: vi.fn(async () => null),
+  };
 }
 
 async function fill(html: string, profile = PROFILE, bridge = noMainWorld()) {
   document.body.innerHTML = html;
   const targets = collectTargets(document, false);
   const actions = await planFills(targets, profile, bridge);
-  const filled = await executeActions(actions, bridge);
+  const filled = (await executeActions(actions, bridge)) + (await fillLocations(targets, profile, bridge));
   return { filled, bridge };
 }
 
@@ -149,6 +155,7 @@ describe("Traffit adapter", () => {
     const bridge: MainWorldBridge = {
       readSelectize: vi.fn(async (targets: string[]) => ({ [targets[0]]: info })),
       setSelectize: vi.fn(async (items) => items.length),
+      searchSelectize: vi.fn(async () => null),
     };
     await fill(TRAFFIT, { ...PROFILE, values: { ...PROFILE.values, workMode: ["remote"] } }, bridge);
     const tag = $("#wm").getAttribute("data-job-autofill-target")!;
@@ -159,6 +166,7 @@ describe("Traffit adapter", () => {
     const bridge: MainWorldBridge = {
       readSelectize: vi.fn(async (targets: string[]) => ({ [targets[0]]: info })),
       setSelectize: vi.fn(async (items) => items.length),
+      searchSelectize: vi.fn(async () => null),
     };
     await fill(TRAFFIT, PROFILE, bridge);
     expect(bridge.setSelectize).not.toHaveBeenCalled();
@@ -176,9 +184,88 @@ describe("Traffit adapter", () => {
         [targets[0]]: { multiple: false, hasValue: true, options: [{ value: "481", text: "zdalny" }] },
       })),
       setSelectize: vi.fn(async () => 0),
+      searchSelectize: vi.fn(async () => null),
     };
     await fill(TRAFFIT, PROFILE, bridge);
     expect(bridge.setSelectize).not.toHaveBeenCalled();
+  });
+});
+
+describe("Traffit location dropdowns", () => {
+  const COUNTRIES: SelectizeInfo = {
+    multiple: false,
+    hasValue: false,
+    options: [
+      { value: "pl", text: "Polska" },
+      { value: "pt", text: "Portugalia" },
+    ],
+  };
+  const CITIES: SelectizeInfo = {
+    multiple: false,
+    hasValue: false,
+    options: [
+      { value: "c1", text: "Warszawa, mazowieckie, Polska" },
+      { value: "c2", text: "Warszawice, mazowieckie, Polska" },
+    ],
+  };
+
+  function locationBridge(country: SelectizeInfo = COUNTRIES) {
+    const order: string[] = [];
+    const bridge: MainWorldBridge = {
+      readSelectize: vi.fn(async () => ({})),
+      setSelectize: vi.fn(async (items) => items.length),
+      searchSelectize: vi.fn(async (target: string, query: string) => {
+        order.push(query);
+        return target === $("#country").getAttribute("data-job-autofill-target") ? country : CITIES;
+      }),
+    };
+    return { bridge, order };
+  }
+
+  const tagOf = (sel: string) => $(sel).getAttribute("data-job-autofill-target")!;
+
+  it("searches the country first, then the city, and picks the matching options", async () => {
+    const { bridge, order } = locationBridge();
+    await fill(TRAFFIT, PROFILE, bridge);
+    expect(order).toEqual(["Polska", "Warszawa"]);
+    expect(bridge.setSelectize).toHaveBeenCalledWith([{ target: tagOf("#country"), values: ["pl"] }]);
+    expect(bridge.setSelectize).toHaveBeenCalledWith([{ target: tagOf("#loc"), values: ["c1"] }]);
+  });
+
+  it("keeps a country the form already selected and still fills the city", async () => {
+    const { bridge } = locationBridge({ ...COUNTRIES, hasValue: true });
+    await fill(TRAFFIT, PROFILE, bridge);
+    expect(bridge.setSelectize).toHaveBeenCalledTimes(1);
+    expect(bridge.setSelectize).toHaveBeenCalledWith([{ target: tagOf("#loc"), values: ["c1"] }]);
+  });
+
+  it("does not search when the profile has no value", async () => {
+    const { bridge, order } = locationBridge();
+    await fill(TRAFFIT, { ...PROFILE, values: { ...PROFILE.values, country: "" } }, bridge);
+    expect(order).toEqual(["Warszawa"]);
+  });
+});
+
+describe("chooseLocation", () => {
+  const opts = (...texts: string[]) => texts.map((text, i) => ({ value: String(i), text }));
+
+  it("prefers an exact name", () => {
+    expect(chooseLocation("Kraków", opts("Kraków, małopolskie", "Kraków"))?.value).toBe("1");
+  });
+
+  it("matches the first part of a longer label", () => {
+    expect(chooseLocation("Łódź", opts("Łódź, łódzkie, Polska", "Łódzkie"))?.value).toBe("0");
+  });
+
+  it("uses the country to choose between cities with the same name", () => {
+    const options = opts("Paris, Île-de-France, France", "Paris, Texas, United States");
+    expect(chooseLocation("Paris", options)).toBeNull();
+    expect(chooseLocation("Paris", options, "France")?.value).toBe("0");
+  });
+
+  it("returns nothing for a partial or missing match", () => {
+    expect(chooseLocation("Warsz", opts("Warszawa"))).toBeNull();
+    expect(chooseLocation("Gdańsk", opts("Gdynia"))).toBeNull();
   });
 });
 

@@ -2,8 +2,9 @@ import { classifyQuestion } from "../choices/choiceRules";
 import { isFillableText } from "../drivers/text";
 import type { TextFieldId } from "../fieldRules";
 import type { TextLike } from "../signals";
-import { normalize } from "../text";
-import type { FieldTarget, VendorAdapter } from "./types";
+import { FIELD_RULES } from "../fieldRules";
+import { containsPhrase, normalize } from "../text";
+import type { FieldTarget, LocationFieldId, VendorAdapter } from "./types";
 
 const SID_TO_FIELD: Record<string, TextFieldId> = {
   firstName: "firstName",
@@ -39,10 +40,18 @@ export const traffitAdapter: VendorAdapter = {
 
     for (const select of doc.querySelectorAll<HTMLSelectElement>(`${FORM} select`)) {
       ctx.claimed.add(select);
-      if (select.classList.contains("location-select")) continue;
-
       const label = select.closest(".form-group")?.querySelector("label");
       const question = normalize(label?.textContent ?? "");
+
+      if (select.classList.contains("location-select")) {
+        const location = locationField(select, question);
+        if (location && !ctx.claimedFields.has(location)) {
+          ctx.claimedFields.add(location);
+          targets.push({ kind: "location", fieldId: location, question, element: select });
+        }
+        continue;
+      }
+
       const fieldId = classifyQuestion(question);
       if (!fieldId) continue;
       ctx.claimedFields.add(fieldId);
@@ -52,3 +61,15 @@ export const traffitAdapter: VendorAdapter = {
     return targets;
   },
 };
+
+const LOCATION_FIELDS: LocationFieldId[] = ["country", "city"];
+
+function locationField(select: HTMLSelectElement, question: string): LocationFieldId | null {
+  const byClass = LOCATION_FIELDS.find((id) => select.classList.contains(id));
+  if (byClass) return byClass;
+  return (
+    LOCATION_FIELDS.find((id) =>
+      FIELD_RULES.find((r) => r.id === id)?.keywords.some((k) => containsPhrase(question, k)),
+    ) ?? null
+  );
+}

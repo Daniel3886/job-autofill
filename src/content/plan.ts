@@ -22,6 +22,7 @@ export type FillAction =
 export interface MainWorldBridge {
   readSelectize(targets: string[]): Promise<Record<string, SelectizeInfo | null>>;
   setSelectize(items: SelectizeSetItem[]): Promise<number>;
+  searchSelectize(target: string, query: string): Promise<SelectizeInfo | null>;
 }
 
 export interface FileSource {
@@ -51,6 +52,8 @@ export async function planFills(
       if (!isUntouched(t.element)) continue;
       const values = choose(t, readNativeOptions(t.element), t.element.multiple, profile);
       if (values) actions.push({ kind: "select", element: t.element, values });
+    } else if (t.kind === "location") {
+      continue;
     } else if (t.kind === "file") {
       const cv = await files.loadCv();
       if (cv && acceptsFile(t.element, cv.name, cv.type)) actions.push({ kind: "file", element: t.element, file: cv });
@@ -111,7 +114,7 @@ function choose(t: FieldTarget, options: ChoiceOption[], multiple: boolean, prof
 
 let tagCounter = 0;
 
-function tagElement(el: HTMLElement): string {
+export function tagElement(el: HTMLElement): string {
   const existing = el.getAttribute(TARGET_ATTR);
   if (existing) return existing;
   const tag = `${Date.now().toString(36)}-${tagCounter++}`;
