@@ -1,7 +1,7 @@
 import { emptyProfile, type Profile } from "./profile";
 import type { SavedAnswer } from "./answers";
 import type { StoredFile } from "./files";
-import { normalize } from "./text";
+import { normalizeQuestion } from "./text";
 
 const PROFILE_KEY = "profile";
 const CV_KEY = "cv";
@@ -46,9 +46,9 @@ export const profileStore = {
 
   async upsertAnswer(question: string, answer: string): Promise<void> {
     const answers = await profileStore.getAnswers();
-    const key = normalize(question);
+    const key = normalizeQuestion(question);
     const entry: SavedAnswer = { question, answer, savedAt: new Date().toISOString() };
-    const index = answers.findIndex((a) => normalize(a.question) === key);
+    const index = answers.findIndex((a) => normalizeQuestion(a.question) === key);
     if (index === -1) answers.push(entry);
     else answers[index] = entry;
     await profileStore.saveAnswers(answers);

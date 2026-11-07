@@ -1,9 +1,16 @@
 export function normalize(text: string): string {
+  return fold(text.replace(/([a-z])([A-Z][a-z])/g, "$1 $2"));
+}
+
+export function normalizeQuestion(text: string): string {
+  return fold(text);
+}
+
+function fold(text: string): string {
   return text
-    .replace(/([a-z])([A-Z][a-z])/g, "$1 $2")
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/ł/g, "l")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();

@@ -5,7 +5,8 @@ export type FieldTarget =
   | { kind: "text"; fieldId: TextFieldId; question: string; element: TextLike }
   | { kind: "select"; fieldId: string; question: string; element: HTMLSelectElement }
   | { kind: "radio"; fieldId: string; question: string; radios: HTMLInputElement[] }
-  | { kind: "file"; fieldId: "cv"; question: string; element: HTMLInputElement };
+  | { kind: "file"; fieldId: "cv"; question: string; element: HTMLInputElement }
+  | { kind: "answer"; element: TextLike; value: string };
 
 export interface CollectContext {
   checkVisibility: boolean;

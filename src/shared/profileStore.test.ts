@@ -19,10 +19,10 @@ describe("saved answers", () => {
   it("adds new questions and replaces an answer when the same question is saved again", async () => {
     await profileStore.upsertAnswer("Czy znasz Dockera?", "nie");
     await profileStore.upsertAnswer("Uwagi", "Dostępny od grudnia");
-    await profileStore.upsertAnswer("czy znasz DOCKERA", "tak");
+    await profileStore.upsertAnswer("CZY ZNASZ DOCKERA?", "tak");
     const answers = await profileStore.getAnswers();
     expect(answers.map((a) => [a.question, a.answer])).toEqual([
-      ["czy znasz DOCKERA", "tak"],
+      ["CZY ZNASZ DOCKERA?", "tak"],
       ["Uwagi", "Dostępny od grudnia"],
     ]);
   });
