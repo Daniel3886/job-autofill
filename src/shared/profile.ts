@@ -46,7 +46,7 @@ export const TEXT_FIELDS = [
   { id: "email", label: "Email", inputType: "email" },
   { id: "phone", label: "Phone", inputType: "tel" },
   { id: "city", label: "City", inputType: "text" },
-  { id: "region", label: "Province (województwo)", inputType: "text" },
+  { id: "region", label: "Province", inputType: "text" },
   { id: "country", label: "Country", inputType: "text" },
 ] as const;
 
@@ -70,7 +70,7 @@ export interface SalaryExpectation {
 export const SALARY_CONTRACTS: { value: SalaryContract; label: string }[] = [
   { value: "b2b", label: "B2B" },
   { value: "uop", label: "UoP" },
-  { value: "civil", label: "Zlecenie / dzieło" },
+  { value: "civil", label: "Civil law" },
 ];
 
 export const SALARY_PERIODS: { value: SalaryPeriod; label: string }[] = [
@@ -118,7 +118,7 @@ export const CHOICE_FIELDS: ChoiceField[] = [
     options: [
       { value: "uop", label: "Employment contract (UoP)" },
       { value: "b2b", label: "B2B" },
-      { value: "civil", label: "Civil law contract (zlecenie / dzieło)" },
+      { value: "civil", label: "Civil law contract" },
     ],
   },
   {
