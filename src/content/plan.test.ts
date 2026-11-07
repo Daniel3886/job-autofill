@@ -12,13 +12,18 @@ const PROFILE: Profile = {
     email: "daniel@example.com",
     phone: "123456789",
     city: "Warszawa",
-    englishLevel: "C1",
     availability: "2w",
     contractTypes: ["b2b"],
-    workMode: "remote",
-    salaryMonthlyNetB2b: "15000",
-    salaryHourlyNetB2b: "120",
+    workMode: ["hybrid", "remote"],
   },
+  salaries: [
+    { amount: "15000", contract: "b2b", period: "month", basis: "net" },
+    { amount: "120", contract: "b2b", period: "hour", basis: "net" },
+  ],
+  languages: [
+    { language: "en", level: "C1" },
+    { language: "de", level: "B1" },
+  ],
 };
 
 function noMainWorld(): MainWorldBridge {
@@ -35,7 +40,6 @@ async function fill(html: string, profile = PROFILE, bridge = noMainWorld()) {
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 
-// Trimmed copy of a Traffit public form's structure.
 const group = (id: string, label: string, control: string) => `
   <div class="form-group">
     <div class="sub-title"></div>
@@ -58,6 +62,16 @@ const TRAFFIT = `
         "en-selectized",
         "Poziom znajomości języka angielskiego",
         `<select id="en"><option value="429">A1</option><option value="432">B2</option><option value="433">C1</option></select>`,
+      )}
+      ${group(
+        "de-selectized",
+        "Poziom znajomości języka niemieckiego",
+        `<select id="de"><option value="1">A2</option><option value="2">B1</option><option value="3">B2</option></select>`,
+      )}
+      ${group(
+        "fr-selectized",
+        "Poziom znajomości języka francuskiego",
+        `<select id="fr"><option value="1">A2</option><option value="2">B1</option></select>`,
       )}
       ${group(
         "av-selectized",
@@ -90,38 +104,54 @@ describe("Traffit adapter", () => {
     expect($<HTMLInputElement>("#f3").value).toBe("daniel@example.com");
     expect($<HTMLInputElement>("#f4").value).toBe("123456789");
     expect($<HTMLSelectElement>("#en").value).toBe("433");
+    expect($<HTMLSelectElement>("#de").value).toBe("2");
+    expect($<HTMLSelectElement>("#fr").value).toBe("1");
     expect($<HTMLSelectElement>("#av").value).toBe("443");
     expect([...$<HTMLSelectElement>("#ct").selectedOptions].map((o) => o.value)).toEqual(["461"]);
-    // Only B2B is accepted, so the "brutto UoP, netto B2B" question uses the B2B net amount.
     expect($<HTMLSelectElement>("#sal").value).toBe("465");
-    expect(filled).toBe(8);
+    expect(filled).toBe(9);
   });
 
   it("does not let the generic adapter touch the location selects", async () => {
     const { bridge } = await fill(TRAFFIT);
     expect($<HTMLSelectElement>("#loc").value).toBe("");
-    // Only the work-mode select is selectized, so only it goes to the MAIN world.
     expect(bridge.readSelectize).toHaveBeenCalledTimes(1);
     expect(vi.mocked(bridge.readSelectize).mock.calls[0][0]).toHaveLength(1);
   });
 
+  const info: SelectizeInfo = {
+    multiple: false,
+    hasValue: false,
+    options: [
+      { value: "478", text: "a) stacjonarny" },
+      { value: "479", text: "b) hybrydowy - 2-3 dni w tygodniu w biurze" },
+      { value: "481", text: "f) zdalny" },
+    ],
+  };
+
   it("reads and sets Selectize options through the MAIN world bridge", async () => {
-    const info: SelectizeInfo = {
-      multiple: false,
-      hasValue: false,
-      options: [
-        { value: "478", text: "a) stacjonarny" },
-        { value: "479", text: "b) hybrydowy - 2-3 dni w tygodniu w biurze" },
-        { value: "481", text: "f) zdalny" },
-      ],
+    const bridge: MainWorldBridge = {
+      readSelectize: vi.fn(async (targets: string[]) => ({ [targets[0]]: info })),
+      setSelectize: vi.fn(async (items) => items.length),
     };
+    await fill(TRAFFIT, { ...PROFILE, values: { ...PROFILE.values, workMode: ["remote"] } }, bridge);
+    const tag = $("#wm").getAttribute("data-job-autofill-target")!;
+    expect(bridge.setSelectize).toHaveBeenCalledWith([{ target: tag, values: ["481"] }]);
+  });
+
+  it("skips a single-choice work mode when two accepted modes both match", async () => {
     const bridge: MainWorldBridge = {
       readSelectize: vi.fn(async (targets: string[]) => ({ [targets[0]]: info })),
       setSelectize: vi.fn(async (items) => items.length),
     };
     await fill(TRAFFIT, PROFILE, bridge);
-    const tag = $("#wm").getAttribute("data-job-autofill-target")!;
-    expect(bridge.setSelectize).toHaveBeenCalledWith([{ target: tag, values: ["481"] }]);
+    expect(bridge.setSelectize).not.toHaveBeenCalled();
+  });
+
+  it("still reads an English level saved before multi-language support", async () => {
+    const legacy: Profile = { version: 1, values: { englishLevel: "B2" } };
+    await fill(TRAFFIT, legacy);
+    expect($<HTMLSelectElement>("#en").value).toBe("432");
   });
 
   it("leaves a Selectize field alone when the user already picked something", async () => {
@@ -136,7 +166,6 @@ describe("Traffit adapter", () => {
   });
 });
 
-// Shaped like the eRecruiter form: questions as text blocks, answers as radios.
 const radios = (name: string, question: string, answers: string[]) => `
   <div class="question">
     <div class="title">${question} *</div>

@@ -2,7 +2,6 @@ import { FIELD_RULES, type FieldRule } from "./fieldRules";
 import { readSignals, signalsQuestion, type InputSignals, type TextLike } from "./signals";
 import { containsPhrase } from "./text";
 
-// Points per signal. Stronger, more deliberate signals score higher.
 export const WEIGHTS = {
   autocomplete: 100,
   inputType: 60,
@@ -13,8 +12,6 @@ export const WEIGHTS = {
   nearbyText: 30,
 } as const;
 
-// An input needs at least this score to be filled. One label match is enough;
-// a lone weak hint is not.
 export const MIN_SCORE = 30;
 
 export interface Match {
@@ -40,8 +37,6 @@ export function scoreField(s: InputSignals, rule: FieldRule): number {
   return score;
 }
 
-// Scores every (input, field) pair, then assigns the best pairs first so each
-// input gets at most one field and each field fills at most one input.
 export function matchInputs(inputs: TextLike[], rules: FieldRule[] = FIELD_RULES): Match[] {
   const candidates: Match[] = [];
   for (const element of inputs) {

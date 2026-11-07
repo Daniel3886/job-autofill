@@ -5,7 +5,6 @@ import { normalize } from "./text";
 
 function render(html: string): (HTMLInputElement | HTMLTextAreaElement)[] {
   document.body.innerHTML = html;
-  // jsdom has no layout, so skip the visibility check in tests.
   return collectTextInputs(document, false);
 }
 
@@ -22,6 +21,8 @@ describe("normalize", () => {
     expect(normalize("Miejscowość")).toBe("miejscowosc");
     expect(normalize("firstName")).toBe("first name");
     expect(normalize("last_name")).toBe("last name");
+    expect(normalize("brutto UoP, netto B2B")).toBe("brutto uop netto b2b");
+    expect(normalize("LinkedIn GitHub")).toBe("linked in git hub");
   });
 });
 
@@ -84,6 +85,23 @@ describe("matchInputs", () => {
       `),
     );
     expect(matches.map((m) => m.element.id)).toEqual(["e1"]);
+  });
+});
+
+describe("profile links", () => {
+  it("matches LinkedIn, GitHub and portfolio fields by label or name", () => {
+    expect(
+      matchedIds(`
+        <label for="l1">Profil LinkedIn</label><input id="l1" type="url">
+        <label for="l2">Link do GitHub</label><input id="l2">
+        <label for="l3">Portfolio / strona www</label><input id="l3">
+        <input name="linkedin_url" id="l4">
+      `),
+    ).toEqual({ l1: "linkedin", l2: "github", l3: "website" });
+  });
+
+  it("does not treat a generic URL field as a profile link", () => {
+    expect(matchedIds(`<label for="u">Link do ogłoszenia</label><input id="u" type="url">`)).toEqual({});
   });
 });
 

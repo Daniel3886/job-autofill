@@ -1,14 +1,8 @@
-// Messages between the content script and the service worker.
-
 export interface FillResultMessage {
   type: "fill-result";
   filled: number;
 }
 
-// The content script runs in an isolated world and cannot see page objects
-// such as a Selectize instance. It asks the service worker to run a small
-// function in the page's MAIN world instead. Only element tags and option
-// ids cross that boundary, never profile data.
 export type MainWorldRequest =
   | { type: "main-world"; op: "readSelectize"; targets: string[] }
   | { type: "main-world"; op: "setSelectize"; items: SelectizeSetItem[] };
@@ -24,7 +18,6 @@ export interface SelectizeInfo {
   hasValue: boolean;
 }
 
-// Attribute the content script puts on elements the MAIN world must find.
 export const TARGET_ATTR = "data-job-autofill-target";
 
 function hasType(msg: unknown, type: string): boolean {

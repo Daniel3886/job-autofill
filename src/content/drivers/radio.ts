@@ -4,12 +4,9 @@ import { normalize } from "../text";
 export interface RadioGroup {
   name: string;
   radios: HTMLInputElement[];
-  question: string; // normalised
+  question: string;
 }
 
-// Groups radios by name and works out the question each group answers:
-// the <legend> of a fieldset that holds only this group, an ARIA radiogroup
-// label, or the text just before the group's container.
 export function collectRadioGroups(root: ParentNode, exclude: Set<Element> = new Set()): RadioGroup[] {
   const byName = new Map<string, HTMLInputElement[]>();
   for (const r of root.querySelectorAll<HTMLInputElement>('input[type="radio"]')) {
@@ -21,7 +18,7 @@ export function collectRadioGroups(root: ParentNode, exclude: Set<Element> = new
 
   const groups: RadioGroup[] = [];
   for (const [name, radios] of byName) {
-    if (radios.some((r) => r.checked)) continue; // the user already answered
+    if (radios.some((r) => r.checked)) continue;
     groups.push({ name, radios, question: groupQuestion(radios) });
   }
   return groups;
@@ -34,7 +31,6 @@ export function radioLabel(r: HTMLInputElement): string {
 }
 
 export function checkRadio(r: HTMLInputElement): void {
-  // A real click checks the radio and fires the events frameworks listen for.
   r.click();
 }
 

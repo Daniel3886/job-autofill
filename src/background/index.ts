@@ -3,20 +3,17 @@ import { profileStore } from "../shared/profileStore";
 import { isFillResult, isMainWorldRequest, type MainWorldRequest } from "../shared/messages";
 import { readSelectizeInPage, setSelectizeInPage } from "./mainWorld";
 
-// First install: open the options page so the user can enter a profile.
 chrome.runtime.onInstalled.addListener(({ reason }) => {
   if (reason === chrome.runtime.OnInstalledReason.INSTALL) {
     void chrome.runtime.openOptionsPage();
   }
 });
 
-// Icon click. activeTab grants access to this one tab until it navigates,
-// so the extension never needs permission to read every site.
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.id === undefined) return;
 
   const profile = await profileStore.get();
-  if (!hasAnyValue(profile)) {
+  if (!hasAnyValue(profile) && !(await profileStore.hasCv())) {
     await chrome.runtime.openOptionsPage();
     return;
   }
@@ -27,7 +24,6 @@ chrome.action.onClicked.addListener(async (tab) => {
       files: ["content.js"],
     });
   } catch (err) {
-    // Chrome blocks injection into its own pages (chrome://, the Web Store).
     console.warn("Job Autofill: cannot run on this page", err);
     await showBadge(tab.id, "!", "#b00020");
   }
@@ -47,7 +43,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       console.warn("Job Autofill: main world call failed", err);
       sendResponse(null);
     });
-    return true; // keep the channel open for the async response
+    return true;
   }
 });
 

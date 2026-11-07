@@ -4,6 +4,11 @@
   --muted: #5c5c5c;
   --border: #d0d0d0;
   --accent: #1b5fd1;
+  --success: #1b7f3b;
+  --danger: #b00020;
+  --toast-bg: #1a1a1a;
+  --toast-fg: #ffffff;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235c5c5c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   color-scheme: light dark;
   font-family: system-ui, sans-serif;
 }
@@ -15,6 +20,11 @@
     --muted: #a0a0a0;
     --border: #3a3b3e;
     --accent: #6ea0ff;
+    --success: #2f9e5a;
+    --danger: #d64550;
+    --toast-bg: #ececec;
+    --toast-fg: #1a1a1a;
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23a0a0a0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   }
 }
 
@@ -60,6 +70,16 @@ select {
   border-radius: 6px;
   background: transparent;
   color: inherit;
+}
+
+select:not([multiple]) {
+  appearance: none;
+  padding-right: 36px;
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+  text-overflow: ellipsis;
 }
 
 input:focus,
@@ -122,4 +142,193 @@ label.check {
 
 label.check input {
   padding: 0;
+}
+
+.file-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.file-badge {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.file-meta {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+
+.file-meta strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-meta span {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+
+.file-pick input {
+  padding: 6px;
+}
+
+.empty {
+  margin: 0;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.language-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.language-row select {
+  width: 100%;
+}
+
+button.add {
+  justify-self: start;
+}
+
+@media (max-width: 480px) {
+  .language-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .language-row button {
+    grid-column: 1 / -1;
+  }
+}
+
+.toast-region {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 24px;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 14px;
+  border-radius: 8px;
+  background: var(--toast-bg);
+  color: var(--toast-fg);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+  pointer-events: auto;
+  animation: toast-in 180ms ease-out;
+}
+
+.toast-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.toast-success .toast-icon {
+  background: var(--success);
+}
+
+.toast-error .toast-icon {
+  background: var(--danger);
+}
+
+.toast-close {
+  padding: 0 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+.salary-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.salary-row + .salary-row {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.salary-row .amount {
+  grid-column: 1 / 3;
+}
+
+.salary-row button {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+}
+
+.salary-row select,
+.salary-row input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .salary-row {
+    grid-template-columns: 1fr;
+  }
+
+  .salary-row .amount,
+  .salary-row button {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+.row-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.9em;
+  color: var(--accent);
 }

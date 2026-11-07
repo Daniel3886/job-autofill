@@ -3,10 +3,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 
-// Builds the options page and the background service worker.
-// The content script has its own config (vite.content.config.ts) because
-// chrome.scripting.executeScript needs one self-contained classic script,
-// not an ES module that imports shared chunks.
 export default defineConfig({
   plugins: [react()],
   base: "./",

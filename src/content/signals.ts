@@ -2,15 +2,14 @@ import { normalize } from "./text";
 
 export type TextLike = HTMLInputElement | HTMLTextAreaElement;
 
-// Everything a text input tells us about what it is for, already normalised.
 export interface InputSignals {
-  autocomplete: string[]; // raw tokens, e.g. ["section-a", "given-name"]
+  autocomplete: string[];
   type: string;
-  label: string; // <label for>, wrapping <label>, aria-labelledby
+  label: string;
   ariaLabel: string;
-  attrs: string; // name + id
+  attrs: string;
   placeholder: string;
-  nearbyText: string; // fallback: short text just before the input
+  nearbyText: string;
 }
 
 export function readSignals(el: TextLike): InputSignals {
@@ -22,17 +21,14 @@ export function readSignals(el: TextLike): InputSignals {
     ariaLabel: normalize(el.getAttribute("aria-label") ?? ""),
     attrs: normalize(`${el.name} ${el.id}`),
     placeholder: normalize(el.placeholder ?? ""),
-    // Only look around the input when it has no proper label: the text is a guess.
     nearbyText: label ? "" : normalize(findNearbyText(el)),
   };
 }
 
-// All human-readable question text for one signal set, for question-type rules.
 export function signalsQuestion(s: InputSignals): string {
   return [s.label, s.ariaLabel, s.placeholder, s.nearbyText].filter(Boolean).join(" ");
 }
 
-// Question text for a <select> or any other labelable control.
 export function questionText(el: HTMLSelectElement | HTMLElement): string {
   const label = labelText(el);
   if (label) return label;
@@ -56,10 +52,6 @@ function labelText(el: HTMLElement): string {
 const MAX_NEARBY_TEXT = 120;
 const CONTROLS = "input, select, textarea";
 
-// Walks up a few levels and takes the closest preceding sibling with real text,
-// e.g. <div><span>Imię</span><div><input></div></div>. Skips decorations like
-// a lone "*", and stops at a sibling that holds another control, because its
-// text belongs to a different field.
 export function findNearbyText(el: HTMLElement): string {
   let node: HTMLElement | null = el;
   for (let depth = 0; depth < 3 && node; depth++) {

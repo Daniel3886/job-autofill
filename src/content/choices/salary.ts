@@ -1,39 +1,49 @@
-import { getList, getText, type Profile, type SalaryFieldId } from "../../shared/profile";
+import { getSalaries, type Profile, type SalaryContract, type SalaryExpectation, type SalaryPeriod } from "../../shared/profile";
+import { parseAmount } from "../../shared/salary";
+import { words } from "../locales";
 import { containsPhrase, normalize } from "../text";
 import type { ChoiceOption } from "./optionMatch";
 
-const HOURLY = ["h", "godz", "godzine", "godzinowa", "godzinowe", "hour", "hourly", "per hour"];
-const B2B = ["b2b", "netto", "net", "faktura", "invoice"];
-const UOP = ["uop", "brutto", "gross", "umowa o prace"];
+const HOURLY = words((l) => l.salary?.hourly);
+const YEARLY = words((l) => l.salary?.yearly);
+const CONTRACT_WORDS: Record<SalaryContract, string[]> = {
+  b2b: words((l) => l.salary?.b2b),
+  uop: words((l) => l.salary?.uop),
+  civil: words((l) => l.salary?.civil),
+};
+const NET = words((l) => l.salary?.net);
+const GROSS = words((l) => l.salary?.gross);
 
-// Which salary value a question asks for, or null when it cannot be told.
-// "Oczekiwania finansowe (brutto UoP, netto B2B)" names both contracts: the
-// answer depends on the contract, so it is used only when the user accepts
-// exactly one contract type.
-export function salaryFieldFor(question: string, profile: Profile): SalaryFieldId | null {
+export function questionPeriod(question: string): SalaryPeriod {
+  if (HOURLY.some((w) => containsPhrase(question, w))) return "hour";
+  if (YEARLY.some((w) => containsPhrase(question, w))) return "year";
+  return "month";
+}
+
+export function salaryFor(question: string, profile: Profile): SalaryExpectation | null {
   const has = (words: string[]) => words.some((w) => containsPhrase(question, w));
-  if (has(HOURLY)) return "salaryHourlyNetB2b";
+  const period = questionPeriod(question);
+  const contracts = (Object.keys(CONTRACT_WORDS) as SalaryContract[]).filter((c) => has(CONTRACT_WORDS[c]));
+  const net = has(NET);
+  const gross = has(GROSS);
 
-  const b2b = has(B2B);
-  const uop = has(UOP);
-  if (b2b && !uop) return "salaryMonthlyNetB2b";
-  if (uop && !b2b) return "salaryMonthlyGrossUop";
-
-  const contracts = getList(profile, "contractTypes");
-  if (contracts.length === 1 && contracts[0] === "b2b") return "salaryMonthlyNetB2b";
-  if (contracts.length === 1 && contracts[0] === "uop") return "salaryMonthlyGrossUop";
-  return null;
+  const candidates = getSalaries(profile).filter(
+    (s) =>
+      parseAmount(s.amount) !== null &&
+      s.period === period &&
+      (contracts.length === 0 || contracts.includes(s.contract)) &&
+      (net === gross || s.basis === (net ? "net" : "gross")),
+  );
+  return candidates.length === 1 ? candidates[0] : null;
 }
 
 export function salaryText(question: string, profile: Profile): string {
-  const field = salaryFieldFor(question, profile);
-  return field ? getText(profile, field) : "";
+  return salaryFor(question, profile)?.amount.trim() ?? "";
 }
 
 export function salaryAmount(question: string, profile: Profile): number | null {
-  const raw = salaryText(question, profile).replace(/[\s,]/g, "");
-  const n = Number(raw);
-  return raw !== "" && Number.isFinite(n) && n > 0 ? n : null;
+  const salary = salaryFor(question, profile);
+  return salary ? parseAmount(salary.amount) : null;
 }
 
 export interface SalaryRange {
@@ -41,11 +51,9 @@ export interface SalaryRange {
   max: number;
 }
 
-const BELOW = ["ponizej", "below", "under", "less than", "up to", "do"];
-const ABOVE = ["powyzej", "above", "over", "more than", "from", "od"];
+const BELOW = words((l) => l.salaryRanges?.below);
+const ABOVE = words((l) => l.salaryRanges?.above);
 
-// "b) 8500 - 10000 PLN" -> 8500..10000, "poniżej 8000" -> 0..8000,
-// "powyżej 34000" -> 34000..Infinity. Numbers may use spaces: "10 000".
 export function parseSalaryRange(text: string): SalaryRange | null {
   const raw = text.replace(/^\s*[a-z]\)\s*/i, "");
   const nums = [...raw.matchAll(/\d[\d\s.]*\d|\d/g)].map((m) => Number(m[0].replace(/[\s.]/g, "")));
@@ -58,8 +66,6 @@ export function parseSalaryRange(text: string): SalaryRange | null {
   return null;
 }
 
-// The one bucket that contains the amount. Gaps between buckets and
-// overlapping buckets both mean "skip".
 export function matchSalaryOption(amount: number, options: ChoiceOption[]): ChoiceOption | null {
   const hits = options.filter((o) => {
     const r = parseSalaryRange(o.text);
