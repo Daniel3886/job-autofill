@@ -56,7 +56,22 @@ const TRAFFIT = `
       ${group("f3", "Email", '<input type="text" id="f3" data-sid="email" autocomplete="email">')}
       ${group("f4", "Telefon komórkowy", '<input type="text" id="f4" data-sid="mobile">')}
       <div class="form__geo-wrapper">
-        ${group("loc-selectized", "Lokalizacja (City)", '<select id="loc" class="location-select city"></select>')}
+        ${group(
+          "country-selectized",
+          "Twoja lokalizacja (Kraj)",
+          `<select id="country" class="location-select country selectized" style="display:none"></select>
+          <div class="selectize-control single"><div class="selectize-input">
+            <input type="text" id="country-selectized" placeholder="Wpisz coś, aby wyszukać lokalizację">
+          </div></div>`,
+        )}
+        ${group(
+          "loc-selectized",
+          "Twoja lokalizacja (Miasto)",
+          `<select id="loc" class="location-select city selectized" style="display:none"></select>
+          <div class="selectize-control single"><div class="selectize-input">
+            <input type="text" id="loc-selectized" placeholder="Wpisz coś, aby wyszukać lokalizację">
+          </div></div>`,
+        )}
       </div>
       ${group(
         "en-selectized",
@@ -112,9 +127,10 @@ describe("Traffit adapter", () => {
     expect(filled).toBe(9);
   });
 
-  it("does not let the generic adapter touch the location selects", async () => {
+  it("does not type into the location search boxes", async () => {
     const { bridge } = await fill(TRAFFIT);
-    expect($<HTMLSelectElement>("#loc").value).toBe("");
+    expect($<HTMLInputElement>("#country-selectized").value).toBe("");
+    expect($<HTMLInputElement>("#loc-selectized").value).toBe("");
     expect(bridge.readSelectize).toHaveBeenCalledTimes(1);
     expect(vi.mocked(bridge.readSelectize).mock.calls[0][0]).toHaveLength(1);
   });
