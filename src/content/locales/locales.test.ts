@@ -4,7 +4,7 @@ import { LOCALES, tiers, words, type Locale } from ".";
 import en from "./en.json";
 import pl from "./pl.json";
 
-const FIELD_IDS = ["firstName", "lastName", "email", "phone", "city", "salary", "linkedin", "github", "website"];
+const FIELD_IDS = ["firstName", "lastName", "email", "phone", "city", "region", "country", "salary", "linkedin", "github", "website"];
 
 describe.each([
   ["en", en as Locale],
@@ -23,6 +23,10 @@ describe.each([
   it("only uses known language codes and levels", () => {
     for (const code of Object.keys(locale.languages ?? {})) expect(LANGUAGES.map((l) => l.code)).toContain(code);
     for (const level of Object.keys(locale.levels ?? {})) expect(LANGUAGE_LEVELS.map((l) => l.value)).toContain(level);
+  });
+
+  it("lists every place with at least one name", () => {
+    for (const names of locale.places ?? []) expect(names.length).toBeGreaterThan(0);
   });
 
   it("has a name for every supported language", () => {

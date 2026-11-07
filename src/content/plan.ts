@@ -4,6 +4,7 @@ import { TARGET_ATTR, type SelectizeInfo, type SelectizeSetItem } from "../share
 import type { FieldTarget } from "./adapters/types";
 import { CHOICE_RULE_BY_ID } from "./choices/choiceRules";
 import { LANGUAGE_LEVEL_RULE } from "./choices/languages";
+import { isPlaceField, matchPlaceOption } from "./choices/places";
 import { chooseChoiceOptions, type ChoiceOption } from "./choices/optionMatch";
 import { matchSalaryOption, salaryAmount, salaryText } from "./choices/salary";
 import { acceptsFile, setFileInput } from "./drivers/file";
@@ -22,6 +23,7 @@ export type FillAction =
 export interface MainWorldBridge {
   readSelectize(targets: string[]): Promise<Record<string, SelectizeInfo | null>>;
   setSelectize(items: SelectizeSetItem[]): Promise<number>;
+  searchSelectize(target: string, query: string): Promise<SelectizeInfo | null>;
 }
 
 export interface FileSource {
@@ -51,6 +53,8 @@ export async function planFills(
       if (!isUntouched(t.element)) continue;
       const values = choose(t, readNativeOptions(t.element), t.element.multiple, profile);
       if (values) actions.push({ kind: "select", element: t.element, values });
+    } else if (t.kind === "location") {
+      continue;
     } else if (t.kind === "file") {
       const cv = await files.loadCv();
       if (cv && acceptsFile(t.element, cv.name, cv.type)) actions.push({ kind: "file", element: t.element, file: cv });
@@ -104,6 +108,10 @@ function choose(t: FieldTarget, options: ChoiceOption[], multiple: boolean, prof
     const level = getLanguages(profile).find((l) => l.language === code)?.level;
     return level ? chooseChoiceOptions(LANGUAGE_LEVEL_RULE, [level], options, multiple) : null;
   }
+  if (isPlaceField(t.fieldId)) {
+    const option = matchPlaceOption(getText(profile, t.fieldId), options);
+    return option ? [option.value] : null;
+  }
   const rule = CHOICE_RULE_BY_ID.get(t.fieldId);
   if (!rule) return null;
   return chooseChoiceOptions(rule, getList(profile, t.fieldId), options, multiple);
@@ -111,7 +119,7 @@ function choose(t: FieldTarget, options: ChoiceOption[], multiple: boolean, prof
 
 let tagCounter = 0;
 
-function tagElement(el: HTMLElement): string {
+export function tagElement(el: HTMLElement): string {
   const existing = el.getAttribute(TARGET_ATTR);
   if (existing) return existing;
   const tag = `${Date.now().toString(36)}-${tagCounter++}`;
