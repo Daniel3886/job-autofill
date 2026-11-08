@@ -479,7 +479,7 @@ function SavedAnswersSection({
       <p className="hint">
         Filled into any form field whose question matches exactly (case, Polish letters and punctuation are ignored).
         To add one, right-click the extension icon on a job form and choose "Pick a field and save an answer", or press
-        Alt+Shift+F.
+        Alt+Shift+I (Option+Shift+I on a Mac).
       </p>
       {answers.length === 0 && <p className="empty">No saved answers yet.</p>}
       {answers.map((row, index) => (

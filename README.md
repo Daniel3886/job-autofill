@@ -37,7 +37,7 @@ Icon click ──▶ service worker ──inject──▶ content script in the 
 
 For questions the extension does not know (e.g. "Czy znasz Dockera i OpenShift?"), save your own answer:
 
-1. On the job form, right-click the extension icon and choose **Pick a field and save an answer**, or press **Alt+Shift+F** (change it at `chrome://extensions/shortcuts`).
+1. On the job form, right-click the extension icon and choose **Pick a field and save an answer**, or press **Alt+Shift+I** (**Option+Shift+I** on a Mac) (change it at `chrome://extensions/shortcuts`).
 2. Click a text field. A panel shows the field's question (editable) and an answer box.
 3. **Save and fill** stores the answer and fills the field. Esc cancels.
 
