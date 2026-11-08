@@ -1,7 +1,7 @@
 import { hasAnyValue } from "../shared/profile";
 import { profileStore } from "../shared/profileStore";
 import { isFillResult, isMainWorldRequest, type MainWorldRequest } from "../shared/messages";
-import { readSelectizeInPage, setSelectizeInPage } from "./mainWorld";
+import { readSelectizeInPage, searchSelectizeInPage, setSelectizeInPage } from "./mainWorld";
 
 const PICK_FIELD = "pick-field";
 
@@ -76,6 +76,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 async function runInMainWorld(tabId: number, frameId: number, msg: MainWorldRequest) {
   const target = { tabId, frameIds: [frameId] };
+  if (msg.op === "searchSelectize") {
+    const [res] = await chrome.scripting.executeScript({
+      target,
+      world: "MAIN",
+      func: searchSelectizeInPage,
+      args: [msg.target, msg.query],
+    });
+    return res?.result ?? null;
+  }
   if (msg.op === "readSelectize") {
     const [res] = await chrome.scripting.executeScript({
       target,

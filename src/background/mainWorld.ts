@@ -1,8 +1,16 @@
 interface SelectizeInstance {
-  settings: { valueField: string; labelField: string; mode: string };
+  settings: {
+    valueField: string;
+    labelField: string;
+    mode: string;
+    load?: (query: string, callback: (results?: unknown[]) => void) => void;
+  };
   options: Record<string, Record<string, unknown>>;
   items: string[];
+  loading: number;
+  isDisabled: boolean;
   setValue(value: string | string[]): void;
+  load(fn: (callback: (results?: unknown[]) => void) => void): void;
 }
 
 type WithSelectize = HTMLSelectElement & { selectize?: SelectizeInstance };
@@ -43,4 +51,34 @@ export function setSelectizeInPage(items: { target: string; values: string[] }[]
     filled++;
   }
   return filled;
+}
+
+export async function searchSelectizeInPage(target: string, query: string) {
+  const el = document.querySelector(`[data-job-autofill-target="${target}"]`) as WithSelectize | null;
+  const s = el?.selectize;
+  if (!el || !s) return null;
+
+  const deadline = Date.now() + 8000;
+  const wait = () => new Promise((resolve) => setTimeout(resolve, 100));
+  while (s.isDisabled && Date.now() < deadline) await wait();
+
+  const hasValue = s.items.length > 0;
+  const load = s.settings.load;
+  if (!hasValue && !s.isDisabled && load) {
+    s.load((callback) => load.call(s, query, callback));
+    while (s.loading > 0 && Date.now() < deadline) await wait();
+  }
+
+  const { valueField, labelField, mode } = s.settings;
+  return {
+    options: Object.values(s.options).map((o) => ({
+      value: String(o[valueField]),
+      text: String(o[labelField] ?? ""),
+      details: Object.entries(o)
+        .filter(([key, v]) => key !== valueField && key !== labelField && typeof v === "string" && v !== "")
+        .map(([, v]) => v as string),
+    })),
+    multiple: mode === "multi" || el.multiple,
+    hasValue,
+  };
 }
