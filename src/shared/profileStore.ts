@@ -1,8 +1,11 @@
 import { emptyProfile, type Profile } from "./profile";
+import type { SavedAnswer } from "./answers";
 import type { StoredFile } from "./files";
+import { normalizeQuestion } from "./text";
 
 const PROFILE_KEY = "profile";
 const CV_KEY = "cv";
+const ANSWERS_KEY = "answers";
 
 export const profileStore = {
   async get(): Promise<Profile> {
@@ -30,5 +33,24 @@ export const profileStore = {
 
   async removeCv(): Promise<void> {
     await chrome.storage.local.remove(CV_KEY);
+  },
+
+  async getAnswers(): Promise<SavedAnswer[]> {
+    const stored = await chrome.storage.local.get(ANSWERS_KEY);
+    return (stored[ANSWERS_KEY] as SavedAnswer[] | undefined) ?? [];
+  },
+
+  async saveAnswers(answers: SavedAnswer[]): Promise<void> {
+    await chrome.storage.local.set({ [ANSWERS_KEY]: answers });
+  },
+
+  async upsertAnswer(question: string, answer: string): Promise<void> {
+    const answers = await profileStore.getAnswers();
+    const key = normalizeQuestion(question);
+    const entry: SavedAnswer = { question, answer, savedAt: new Date().toISOString() };
+    const index = answers.findIndex((a) => normalizeQuestion(a.question) === key);
+    if (index === -1) answers.push(entry);
+    else answers[index] = entry;
+    await profileStore.saveAnswers(answers);
   },
 };

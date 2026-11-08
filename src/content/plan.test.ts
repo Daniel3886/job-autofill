@@ -207,3 +207,35 @@ describe("generic adapter", () => {
     expect(actions.some((a) => a.kind === "radio")).toBe(false);
   });
 });
+
+describe("saved answers", () => {
+  const answers = [
+    { question: "Czy znasz Dockera i OpenShift?", answer: "tak", savedAt: "" },
+    { question: "Uwagi", answer: "Dostępny od grudnia", savedAt: "" },
+    { question: "Imię", answer: "Johnny", savedAt: "" },
+  ];
+
+  async function fillWithAnswers(html: string) {
+    document.body.innerHTML = html;
+    const bridge = noMainWorld();
+    const actions = await planFills(collectTargets(document, false, answers), PROFILE, bridge);
+    return executeActions(actions, bridge);
+  }
+
+  it("fills a field whose question matches a saved one, ignoring case, accents and the asterisk", async () => {
+    await fillWithAnswers(`
+      <div><div>CZY ZNASZ DOCKERA I OPENSHIFT? *</div><input id="d"></div>
+      <div><div>Uwagi:</div><textarea id="u"></textarea></div>
+      <div><div>Czy znasz Kubernetesa?</div><input id="k"></div>`);
+    expect($<HTMLInputElement>("#d").value).toBe("tak");
+    expect($<HTMLTextAreaElement>("#u").value).toBe("Dostępny od grudnia");
+    expect($<HTMLInputElement>("#k").value).toBe("");
+  });
+
+  it("wins over the profile and the vendor adapter for the same field", async () => {
+    const filled = await fillWithAnswers(TRAFFIT);
+    expect($<HTMLInputElement>("#f1").value).toBe("Johnny");
+    expect($<HTMLInputElement>("#f2").value).toBe("Kowalski");
+    expect(filled).toBe(9);
+  });
+});

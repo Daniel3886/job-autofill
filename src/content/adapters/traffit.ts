@@ -29,7 +29,7 @@ export const traffitAdapter: VendorAdapter = {
 
     for (const el of doc.querySelectorAll<TextLike>(`${FORM} input[data-sid], ${FORM} textarea[data-sid]`)) {
       const fieldId = SID_TO_FIELD[el.dataset.sid ?? ""];
-      if (!fieldId) continue;
+      if (!fieldId || ctx.claimed.has(el)) continue;
       ctx.claimed.add(el);
       ctx.claimedFields.add(fieldId);
       if (isFillableText(el, ctx.checkVisibility)) {
@@ -38,6 +38,7 @@ export const traffitAdapter: VendorAdapter = {
     }
 
     for (const select of doc.querySelectorAll<HTMLSelectElement>(`${FORM} select`)) {
+      if (ctx.claimed.has(select)) continue;
       ctx.claimed.add(select);
       if (select.classList.contains("location-select")) continue;
 
