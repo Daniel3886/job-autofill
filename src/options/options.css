@@ -10,8 +10,8 @@
   --warning: #a35c00;
   --success: #1b7f3b;
   --danger: #b00020;
-  --toast-bg: #1a1a1a;
-  --toast-fg: #ffffff;
+  --toast-success: #1e7a3c;
+  --toast-error: #b3261e;
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235c5c5c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   color-scheme: light dark;
   font-family: system-ui, sans-serif;
@@ -30,8 +30,8 @@
     --warning: #f0b45a;
     --success: #2f9e5a;
     --danger: #d64550;
-    --toast-bg: #ececec;
-    --toast-fg: #1a1a1a;
+    --toast-success: #1e7a3c;
+    --toast-error: #b3261e;
     --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23a0a0a0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   }
 }
@@ -315,8 +315,8 @@ button.add {
   gap: 10px;
   padding: 10px 12px 10px 14px;
   border-radius: 8px;
-  background: var(--toast-bg);
-  color: var(--toast-fg);
+  color: #fff;
+  font-weight: 500;
   box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
   pointer-events: auto;
   animation: toast-in 180ms ease-out;
@@ -330,15 +330,23 @@ button.add {
   border-radius: 50%;
   font-size: 12px;
   font-weight: 700;
-  color: #fff;
+  background: #fff;
+}
+
+.toast-success {
+  background: var(--toast-success);
 }
 
 .toast-success .toast-icon {
-  background: var(--success);
+  color: var(--toast-success);
+}
+
+.toast-error {
+  background: var(--toast-error);
 }
 
 .toast-error .toast-icon {
-  background: var(--danger);
+  color: var(--toast-error);
 }
 
 .toast-close {
