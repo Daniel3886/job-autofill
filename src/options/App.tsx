@@ -102,51 +102,57 @@ export function App() {
         empty here, or without an exact match on the form, is left for you to fill.
       </p>
       <form onSubmit={onSubmit}>
-        <fieldset>
-          <legend>Personal details</legend>
-          {TEXT_FIELDS.map(({ id, label, inputType }) => (
-            <label key={id}>
-              <span>{label}</span>
-              <input type={inputType} value={getText(profile, id)} onChange={(e) => update(id, e.target.value)} />
-            </label>
-          ))}
-        </fieldset>
+        <div className="sections">
+          <div className="column">
+            <fieldset>
+              <legend>Personal details</legend>
+              {TEXT_FIELDS.map(({ id, label, inputType }) => (
+                <label key={id}>
+                  <span>{label}</span>
+                  <input type={inputType} value={getText(profile, id)} onChange={(e) => update(id, e.target.value)} />
+                </label>
+              ))}
+            </fieldset>
 
-        <fieldset>
-          <legend>Links</legend>
-          <p className="hint">Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
-          {LINK_FIELDS.map(({ id, label, placeholder }) => (
-            <label key={id}>
-              <span>{label}</span>
-              <input
-                type="url"
-                placeholder={placeholder}
-                value={getText(profile, id)}
-                onChange={(e) => update(id, e.target.value)}
-              />
-            </label>
-          ))}
-        </fieldset>
+            <fieldset>
+              <legend>Links</legend>
+              <p className="hint">Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
+              {LINK_FIELDS.map(({ id, label, placeholder }) => (
+                <label key={id}>
+                  <span>{label}</span>
+                  <input
+                    type="url"
+                    placeholder={placeholder}
+                    value={getText(profile, id)}
+                    onChange={(e) => update(id, e.target.value)}
+                  />
+                </label>
+              ))}
+            </fieldset>
 
-        <CvSection showToast={showToast} />
+            <CvSection showToast={showToast} />
 
-        <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
+            <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
+          </div>
 
-        <fieldset>
-          <legend>Preferences</legend>
-          {CHOICE_FIELDS.map((field) => (
-            <ChoiceInput
-              key={field.id}
-              field={field}
-              value={getList(profile, field.id)}
-              onChange={(v) => update(field.id, v)}
-            />
-          ))}
-        </fieldset>
+          <div className="column">
+            <fieldset>
+              <legend>Preferences</legend>
+              {CHOICE_FIELDS.map((field) => (
+                <ChoiceInput
+                  key={field.id}
+                  field={field}
+                  value={getList(profile, field.id)}
+                  onChange={(v) => update(field.id, v)}
+                />
+              ))}
+            </fieldset>
 
-        <SalarySection salaries={profile.salaries ?? []} onChange={updateSalaries} />
+            <SalarySection salaries={profile.salaries ?? []} onChange={updateSalaries} />
 
-        <SavedAnswersSection answers={answers} onChange={setAnswers} />
+            <SavedAnswersSection answers={answers} onChange={setAnswers} />
+          </div>
+        </div>
 
         <div className="actions">
           <button type="submit" disabled={saving}>
@@ -260,9 +266,7 @@ function ChoiceInput({
             <input
               type="checkbox"
               checked={value.includes(o.value)}
-              onChange={(e) =>
-                onChange(e.target.checked ? [...value, o.value] : value.filter((v) => v !== o.value))
-              }
+              onChange={(e) => onChange(e.target.checked ? [...value, o.value] : value.filter((v) => v !== o.value))}
             />
             {o.label}
           </label>
@@ -380,7 +384,10 @@ function SalarySection({
     const converted = formatAmount(convertAmount(amount, row.period, period), period);
     updateRow(index, { period, amount: converted });
     const from = SALARY_PERIODS.find((p) => p.value === row.period)?.label;
-    setNote(index, `Converted from ${row.amount} ${from} at ${HOURS_PER_MONTH} working hours a month. Adjust if needed.`);
+    setNote(
+      index,
+      `Converted from ${row.amount} ${from} at ${HOURS_PER_MONTH} working hours a month. Adjust if needed.`,
+    );
   }
 
   function removeRow(index: number) {
@@ -481,8 +488,8 @@ function SavedAnswersSection({
     <fieldset>
       <legend>Saved answers</legend>
       <p className="hint">
-        Filled into any form field whose question matches exactly (case, Polish letters and punctuation are ignored).
-        To add one, right-click the extension icon on a job form and choose "Pick a field and save an answer", or press
+        Filled into any form field whose question matches exactly (case, Polish letters and punctuation are ignored). To
+        add one, right-click the extension icon on a job form and choose "Pick a field and save an answer", or press
         Alt+Shift+I (Option+Shift+I on a Mac).
       </p>
       {answers.length === 0 && <p className="empty">No saved answers yet.</p>}
@@ -511,7 +518,11 @@ function SavedAnswersSection({
           <div className="answer-body">
             <label>
               <span>Question</span>
-              <textarea rows={2} value={row.question} onChange={(e) => updateRow(index, { question: e.target.value })} />
+              <textarea
+                rows={2}
+                value={row.question}
+                onChange={(e) => updateRow(index, { question: e.target.value })}
+              />
             </label>
             <label>
               <span>Answer</span>
