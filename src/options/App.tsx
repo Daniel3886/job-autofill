@@ -473,6 +473,10 @@ function SavedAnswersSection({
     onChange(answers.map((a, i) => (i === index ? { ...a, ...patch } : a)));
   }
 
+  function removeRow(index: number) {
+    onChange(answers.filter((_, i) => i !== index));
+  }
+
   return (
     <fieldset>
       <legend>Saved answers</legend>
@@ -489,6 +493,20 @@ function SavedAnswersSection({
               <span className="answer-question">{row.question.trim() || "No question"}</span>
               <span className="answer-preview">{row.answer.trim() || "No answer"}</span>
             </span>
+            <button
+              type="button"
+              className="answer-x"
+              aria-label={`Remove saved answer: ${row.question.trim() || "No question"}`}
+              title="Remove"
+              onClick={(e) => {
+                e.preventDefault();
+                removeRow(index);
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </button>
           </summary>
           <div className="answer-body">
             <label>
@@ -499,11 +517,7 @@ function SavedAnswersSection({
               <span>Answer</span>
               <input type="text" value={row.answer} onChange={(e) => updateRow(index, { answer: e.target.value })} />
             </label>
-            <button
-              type="button"
-              className="secondary remove"
-              onClick={() => onChange(answers.filter((_, i) => i !== index))}
-            >
+            <button type="button" className="secondary remove" onClick={() => removeRow(index)}>
               Remove
             </button>
           </div>
