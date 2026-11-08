@@ -31,12 +31,26 @@ interface ToastMessage {
 
 type ShowToast = (kind: ToastMessage["kind"], text: string) => void;
 
+function isEmpty(value: unknown): boolean {
+  return value === "" || (Array.isArray(value) && value.length === 0);
+}
+
+function snapshot(profile: Profile, answers: SavedAnswer[]): string {
+  const values = Object.fromEntries(
+    Object.entries(profile.values)
+      .filter(([, v]) => !isEmpty(v))
+      .sort(([a], [b]) => a.localeCompare(b)),
+  );
+  return JSON.stringify({ ...profile, values, answers });
+}
+
 export function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [answers, setAnswers] = useState<SavedAnswer[]>([]);
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
 
   const showToast = useCallback<ShowToast>((kind, text) => {
@@ -46,12 +60,17 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    profileStore
-      .get()
-      .then((p) => setProfile({ ...p, languages: getLanguages(p), salaries: getSalaries(p) }))
+    Promise.all([profileStore.get(), profileStore.getAnswers()])
+      .then(([p, a]) => {
+        const loaded = { ...p, languages: getLanguages(p), salaries: getSalaries(p) };
+        setProfile(loaded);
+        setAnswers(a);
+        setSavedSnapshot(snapshot(loaded, a));
+      })
       .catch(() => setLoadFailed(true));
-    profileStore.getAnswers().then(setAnswers, () => setLoadFailed(true));
   }, []);
+
+  const dirty = profile !== null && snapshot(profile, answers) !== savedSnapshot;
 
   function update(id: string, value: ProfileValue) {
     setProfile((p) => (p ? { ...p, values: { ...p.values, [id]: value } } : p));
@@ -82,6 +101,7 @@ export function App() {
         profileStore.saveAnswers(keptAnswers),
       ]);
       setAnswers(keptAnswers);
+      setSavedSnapshot(snapshot(profile, keptAnswers));
       showToast("success", "Profile saved");
     } catch {
       showToast("error", "Could not save your profile. Try again.");
@@ -155,9 +175,12 @@ export function App() {
         </div>
 
         <div className="actions">
-          <button type="submit" disabled={saving}>
+          <button type="submit" className="primary" disabled={saving || !dirty}>
             {saving ? "Saving…" : "Save profile"}
           </button>
+          <span className={`save-status${dirty ? " dirty" : ""}`}>
+            {dirty ? "Unsaved changes" : "All changes saved"}
+          </span>
         </div>
       </form>
       <Toast toast={toast} onClose={() => setToast(null)} />
