@@ -483,19 +483,31 @@ function SavedAnswersSection({
       </p>
       {answers.length === 0 && <p className="empty">No saved answers yet.</p>}
       {answers.map((row, index) => (
-        <div className="answer-row" key={`${index}-${row.savedAt}`}>
-          <label className="question">
-            <span>Question</span>
-            <textarea rows={2} value={row.question} onChange={(e) => updateRow(index, { question: e.target.value })} />
-          </label>
-          <label>
-            <span>Answer</span>
-            <input type="text" value={row.answer} onChange={(e) => updateRow(index, { answer: e.target.value })} />
-          </label>
-          <button type="button" className="secondary" onClick={() => onChange(answers.filter((_, i) => i !== index))}>
-            Remove
-          </button>
-        </div>
+        <details className="answer-card" key={`${index}-${row.savedAt}`}>
+          <summary>
+            <span className="answer-summary">
+              <span className="answer-question">{row.question.trim() || "No question"}</span>
+              <span className="answer-preview">{row.answer.trim() || "No answer"}</span>
+            </span>
+          </summary>
+          <div className="answer-body">
+            <label>
+              <span>Question</span>
+              <textarea rows={2} value={row.question} onChange={(e) => updateRow(index, { question: e.target.value })} />
+            </label>
+            <label>
+              <span>Answer</span>
+              <input type="text" value={row.answer} onChange={(e) => updateRow(index, { answer: e.target.value })} />
+            </label>
+            <button
+              type="button"
+              className="secondary remove"
+              onClick={() => onChange(answers.filter((_, i) => i !== index))}
+            >
+              Remove
+            </button>
+          </div>
+        </details>
       ))}
     </fieldset>
   );
