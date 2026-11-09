@@ -31,12 +31,26 @@ interface ToastMessage {
 
 type ShowToast = (kind: ToastMessage["kind"], text: string) => void;
 
+function isEmpty(value: unknown): boolean {
+  return value === "" || (Array.isArray(value) && value.length === 0);
+}
+
+function snapshot(profile: Profile, answers: SavedAnswer[]): string {
+  const values = Object.fromEntries(
+    Object.entries(profile.values)
+      .filter(([, v]) => !isEmpty(v))
+      .sort(([a], [b]) => a.localeCompare(b)),
+  );
+  return JSON.stringify({ ...profile, values, answers });
+}
+
 export function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [answers, setAnswers] = useState<SavedAnswer[]>([]);
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
 
   const showToast = useCallback<ShowToast>((kind, text) => {
@@ -46,12 +60,17 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    profileStore
-      .get()
-      .then((p) => setProfile({ ...p, languages: getLanguages(p), salaries: getSalaries(p) }))
+    Promise.all([profileStore.get(), profileStore.getAnswers()])
+      .then(([p, a]) => {
+        const loaded = { ...p, languages: getLanguages(p), salaries: getSalaries(p) };
+        setProfile(loaded);
+        setAnswers(a);
+        setSavedSnapshot(snapshot(loaded, a));
+      })
       .catch(() => setLoadFailed(true));
-    profileStore.getAnswers().then(setAnswers, () => setLoadFailed(true));
   }, []);
+
+  const dirty = profile !== null && snapshot(profile, answers) !== savedSnapshot;
 
   function update(id: string, value: ProfileValue) {
     setProfile((p) => (p ? { ...p, values: { ...p.values, [id]: value } } : p));
@@ -82,6 +101,7 @@ export function App() {
         profileStore.saveAnswers(keptAnswers),
       ]);
       setAnswers(keptAnswers);
+      setSavedSnapshot(snapshot(profile, keptAnswers));
       showToast("success", "Profile saved");
     } catch {
       showToast("error", "Could not save your profile. Try again.");
@@ -102,56 +122,67 @@ export function App() {
         empty here, or without an exact match on the form, is left for you to fill.
       </p>
       <form onSubmit={onSubmit}>
-        <fieldset>
-          <legend>Personal details</legend>
-          {TEXT_FIELDS.map(({ id, label, inputType }) => (
-            <label key={id}>
-              <span>{label}</span>
-              <input type={inputType} value={getText(profile, id)} onChange={(e) => update(id, e.target.value)} />
-            </label>
-          ))}
-        </fieldset>
+        <div className="sections">
+          <div className="column">
+            <fieldset>
+              <legend>Personal details</legend>
+              {TEXT_FIELDS.map(({ id, label, inputType }) => (
+                <label key={id}>
+                  <span>{label}</span>
+                  <input type={inputType} value={getText(profile, id)} onChange={(e) => update(id, e.target.value)} />
+                </label>
+              ))}
+            </fieldset>
 
-        <fieldset>
-          <legend>Links</legend>
-          <p className="hint">Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
-          {LINK_FIELDS.map(({ id, label, placeholder }) => (
-            <label key={id}>
-              <span>{label}</span>
-              <input
-                type="url"
-                placeholder={placeholder}
-                value={getText(profile, id)}
-                onChange={(e) => update(id, e.target.value)}
-              />
-            </label>
-          ))}
-        </fieldset>
+            <fieldset>
+              <legend>Links</legend>
+              <p className="hint">Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
+              {LINK_FIELDS.map(({ id, label, placeholder }) => (
+                <label key={id}>
+                  <span>{label}</span>
+                  <input
+                    type="url"
+                    placeholder={placeholder}
+                    value={getText(profile, id)}
+                    onChange={(e) => update(id, e.target.value)}
+                  />
+                </label>
+              ))}
+            </fieldset>
 
-        <CvSection showToast={showToast} />
+            <CvSection showToast={showToast} />
+          </div>
 
-        <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
+          <div className="column">
+            <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
 
-        <fieldset>
-          <legend>Preferences</legend>
-          {CHOICE_FIELDS.map((field) => (
-            <ChoiceInput
-              key={field.id}
-              field={field}
-              value={getList(profile, field.id)}
-              onChange={(v) => update(field.id, v)}
-            />
-          ))}
-        </fieldset>
+            <fieldset>
+              <legend>Preferences</legend>
+              {CHOICE_FIELDS.map((field) => (
+                <ChoiceInput
+                  key={field.id}
+                  field={field}
+                  value={getList(profile, field.id)}
+                  onChange={(v) => update(field.id, v)}
+                />
+              ))}
+            </fieldset>
 
-        <SalarySection salaries={profile.salaries ?? []} onChange={updateSalaries} />
+            <SalarySection salaries={profile.salaries ?? []} onChange={updateSalaries} />
+          </div>
 
-        <SavedAnswersSection answers={answers} onChange={setAnswers} />
+          <div className="column answers-column">
+            <SavedAnswersSection answers={answers} onChange={setAnswers} />
+          </div>
+        </div>
 
         <div className="actions">
-          <button type="submit" disabled={saving}>
+          <button type="submit" className="primary" disabled={saving || !dirty}>
             {saving ? "Saving…" : "Save profile"}
           </button>
+          <span className={`save-status${dirty ? " dirty" : ""}`}>
+            {dirty ? "Unsaved changes" : "All changes saved"}
+          </span>
         </div>
       </form>
       <Toast toast={toast} onClose={() => setToast(null)} />
@@ -260,9 +291,7 @@ function ChoiceInput({
             <input
               type="checkbox"
               checked={value.includes(o.value)}
-              onChange={(e) =>
-                onChange(e.target.checked ? [...value, o.value] : value.filter((v) => v !== o.value))
-              }
+              onChange={(e) => onChange(e.target.checked ? [...value, o.value] : value.filter((v) => v !== o.value))}
             />
             {o.label}
           </label>
@@ -380,7 +409,10 @@ function SalarySection({
     const converted = formatAmount(convertAmount(amount, row.period, period), period);
     updateRow(index, { period, amount: converted });
     const from = SALARY_PERIODS.find((p) => p.value === row.period)?.label;
-    setNote(index, `Converted from ${row.amount} ${from} at ${HOURS_PER_MONTH} working hours a month. Adjust if needed.`);
+    setNote(
+      index,
+      `Converted from ${row.amount} ${from} at ${HOURS_PER_MONTH} working hours a month. Adjust if needed.`,
+    );
   }
 
   function removeRow(index: number) {
@@ -481,8 +513,8 @@ function SavedAnswersSection({
     <fieldset>
       <legend>Saved answers</legend>
       <p className="hint">
-        Filled into any form field whose question matches exactly (case, Polish letters and punctuation are ignored).
-        To add one, right-click the extension icon on a job form and choose "Pick a field and save an answer", or press
+        Filled into any form field whose question matches exactly (case, Polish letters and punctuation are ignored). To
+        add one, right-click the extension icon on a job form and choose "Pick a field and save an answer", or press
         Alt+Shift+I (Option+Shift+I on a Mac).
       </p>
       {answers.length === 0 && <p className="empty">No saved answers yet.</p>}
@@ -511,7 +543,11 @@ function SavedAnswersSection({
           <div className="answer-body">
             <label>
               <span>Question</span>
-              <textarea rows={2} value={row.question} onChange={(e) => updateRow(index, { question: e.target.value })} />
+              <textarea
+                rows={2}
+                value={row.question}
+                onChange={(e) => updateRow(index, { question: e.target.value })}
+              />
             </label>
             <label>
               <span>Answer</span>
