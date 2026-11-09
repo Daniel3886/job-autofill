@@ -79,6 +79,10 @@ form {
   .column {
     gap: 24px;
   }
+
+  .answers-column {
+    grid-column: 2;
+  }
 }
 
 @media (max-width: 480px) {

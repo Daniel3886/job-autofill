@@ -151,11 +151,11 @@ export function App() {
             </fieldset>
 
             <CvSection showToast={showToast} />
-
-            <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
           </div>
 
           <div className="column">
+            <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
+
             <fieldset>
               <legend>Preferences</legend>
               {CHOICE_FIELDS.map((field) => (
@@ -169,7 +169,9 @@ export function App() {
             </fieldset>
 
             <SalarySection salaries={profile.salaries ?? []} onChange={updateSalaries} />
+          </div>
 
+          <div className="column answers-column">
             <SavedAnswersSection answers={answers} onChange={setAnswers} />
           </div>
         </div>
