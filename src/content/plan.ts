@@ -39,10 +39,12 @@ export async function planFills(
   files: FileSource = NO_FILES,
 ): Promise<FillAction[]> {
   const actions: FillAction[] = [];
-  const selectized: { tag: string; target: FieldTarget }[] = [];
+  const selectized: { tag: string; target: Extract<FieldTarget, { kind: "select" }> }[] = [];
 
   for (const t of targets) {
-    if (t.kind === "text") {
+    if (t.kind === "answer") {
+      actions.push({ kind: "text", element: t.element, value: t.value });
+    } else if (t.kind === "text") {
       const value = t.fieldId === "salary" ? salaryText(t.question, profile) : getText(profile, t.fieldId);
       if (value) actions.push({ kind: "text", element: t.element, value });
     } else if (t.kind === "select") {
@@ -97,7 +99,7 @@ export async function executeActions(actions: FillAction[], bridge: MainWorldBri
   return filled;
 }
 
-function choose(t: FieldTarget, options: ChoiceOption[], multiple: boolean, profile: Profile): string[] | null {
+function choose(t: Exclude<FieldTarget, { kind: "answer" }>, options: ChoiceOption[], multiple: boolean, profile: Profile): string[] | null {
   if (t.fieldId === "salary") {
     const amount = salaryAmount(t.question, profile);
     const option = amount === null ? null : matchSalaryOption(amount, options);

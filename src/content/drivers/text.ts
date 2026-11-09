@@ -2,12 +2,15 @@ import type { TextLike } from "../signals";
 
 const FILLABLE_TYPES = new Set(["text", "email", "tel", "url", "number", "search", ""]);
 
+export function isTextLike(el: unknown): el is TextLike {
+  if (el instanceof HTMLTextAreaElement) return !el.disabled && !el.readOnly;
+  if (!(el instanceof HTMLInputElement)) return false;
+  const type = (el.getAttribute("type") ?? "").toLowerCase();
+  return FILLABLE_TYPES.has(type) && !el.disabled && !el.readOnly;
+}
+
 export function isFillableText(el: TextLike, checkVisibility: boolean): boolean {
-  if (el instanceof HTMLInputElement) {
-    const type = (el.getAttribute("type") ?? "").toLowerCase();
-    if (!FILLABLE_TYPES.has(type)) return false;
-  }
-  if (el.disabled || el.readOnly || el.value !== "") return false;
+  if (!isTextLike(el) || el.value !== "") return false;
   return !checkVisibility || isVisible(el);
 }
 

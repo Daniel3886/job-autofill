@@ -69,3 +69,21 @@ export function findNearbyText(el: HTMLElement): string {
   }
   return "";
 }
+
+export function cleanQuestion(text: string): string {
+  return text.replace(/\s+/g, " ").replace(/[\s*:]+$/, "").trim();
+}
+
+export function rawQuestionText(el: HTMLElement): string {
+  const labels = [...((el as HTMLInputElement).labels ?? [])].map((l) => l.textContent ?? "");
+  const labelledBy = el.getAttribute("aria-labelledby");
+  if (labelledBy) {
+    for (const id of labelledBy.split(/\s+/)) labels.push(el.ownerDocument.getElementById(id)?.textContent ?? "");
+  }
+  const text =
+    labels.join(" ").trim() ||
+    (el.getAttribute("aria-label") ?? "").trim() ||
+    findNearbyText(el) ||
+    (el.getAttribute("placeholder") ?? "").trim();
+  return cleanQuestion(text);
+}

@@ -24,8 +24,8 @@ const bridge: MainWorldBridge = {
 const files: FileSource = { loadCv: () => profileStore.getCv() };
 
 async function run() {
-  const profile = await profileStore.get();
-  const targets = collectTargets(document);
+  const [profile, answers] = await Promise.all([profileStore.get(), profileStore.getAnswers()]);
+  const targets = collectTargets(document, true, answers);
   const actions = await planFills(targets, profile, bridge, files);
   const located = await fillLocations(targets, profile, bridge).catch((err) => {
     console.warn("Job Autofill: city fill failed", err);

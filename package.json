@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Chrome/Chromium extension that fills job application forms in one click",
   "scripts": {
-    "build": "vite build && vite build -c vite.content.config.ts",
+    "build": "vite build && vite build -c vite.content.config.ts --mode content && vite build -c vite.content.config.ts --mode picker",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
