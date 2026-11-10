@@ -50,7 +50,10 @@ export function App() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [answers, setAnswers] = useState<SavedAnswer[]>([]);
-  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
+  // What is in storage, so Reset can bring the form back to it.
+  const [saved, setSaved] = useState<{ profile: Profile; answers: SavedAnswer[] } | null>(null);
+  // Bumped on Reset so sections with their own state (question edits, salary notes) start fresh.
+  const [resetCount, setResetCount] = useState(0);
   const toastTimer = useRef<number | undefined>(undefined);
 
   const showToast = useCallback<ShowToast>((kind, text) => {
@@ -65,12 +68,20 @@ export function App() {
         const loaded = { ...p, languages: getLanguages(p), salaries: getSalaries(p) };
         setProfile(loaded);
         setAnswers(a);
-        setSavedSnapshot(snapshot(loaded, a));
+        setSaved({ profile: loaded, answers: a });
       })
       .catch(() => setLoadFailed(true));
   }, []);
 
-  const dirty = profile !== null && snapshot(profile, answers) !== savedSnapshot;
+  const dirty =
+    profile !== null && saved !== null && snapshot(profile, answers) !== snapshot(saved.profile, saved.answers);
+
+  function resetChanges() {
+    if (!saved) return;
+    setProfile(saved.profile);
+    setAnswers(saved.answers);
+    setResetCount((n) => n + 1);
+  }
 
   function update(id: string, value: ProfileValue) {
     setProfile((p) => (p ? { ...p, values: { ...p.values, [id]: value } } : p));
@@ -101,7 +112,7 @@ export function App() {
         profileStore.saveAnswers(keptAnswers),
       ]);
       setAnswers(keptAnswers);
-      setSavedSnapshot(snapshot(profile, keptAnswers));
+      setSaved({ profile, answers: keptAnswers });
       showToast("success", "Profile saved");
     } catch {
       showToast("error", "Could not save your profile. Try again.");
@@ -172,20 +183,23 @@ export function App() {
 
           {/* Languages and salary share a row so both start at the same height. */}
           <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
-          <SalarySection salaries={profile.salaries ?? []} onChange={updateSalaries} />
+          <SalarySection key={resetCount} salaries={profile.salaries ?? []} onChange={updateSalaries} />
 
           <div className="answers-row">
-            <SavedAnswersSection answers={answers} onChange={setAnswers} />
+            <SavedAnswersSection key={resetCount} answers={answers} onChange={setAnswers} />
           </div>
         </div>
 
         <div className="actions">
-          <button type="submit" className="primary" disabled={saving || !dirty}>
-            {saving ? "Saving…" : "Save profile"}
-          </button>
           <span className={`save-status${dirty ? " dirty" : ""}`}>
             {dirty ? "Unsaved changes" : "All changes saved"}
           </span>
+          <button type="button" className="secondary" disabled={saving || !dirty} onClick={resetChanges}>
+            Reset changes
+          </button>
+          <button type="submit" className="primary" disabled={saving || !dirty}>
+            {saving ? "Saving…" : "Save profile"}
+          </button>
         </div>
       </form>
       <Toast toast={toast} onClose={() => setToast(null)} />

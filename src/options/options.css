@@ -292,6 +292,12 @@ button.secondary {
   border: 1px solid var(--border);
 }
 
+button.secondary:disabled {
+  color: var(--muted);
+  box-shadow: none;
+  opacity: 0.6;
+}
+
 .file-pick input {
   padding: 6px;
 }
