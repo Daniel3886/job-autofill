@@ -149,12 +149,10 @@ export function App() {
                 </label>
               ))}
             </fieldset>
-
-            <CvSection showToast={showToast} />
           </div>
 
           <div className="column">
-            <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
+            <CvSection showToast={showToast} />
 
             <fieldset>
               <legend>Preferences</legend>
@@ -167,9 +165,11 @@ export function App() {
                 />
               ))}
             </fieldset>
-
-            <SalarySection salaries={profile.salaries ?? []} onChange={updateSalaries} />
           </div>
+
+          {/* Languages and salary share a row so both start at the same height. */}
+          <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
+          <SalarySection salaries={profile.salaries ?? []} onChange={updateSalaries} />
 
           <div className="answers-row">
             <SavedAnswersSection answers={answers} onChange={setAnswers} />
