@@ -39,7 +39,7 @@ function snapshot(profile: Profile, answers: SavedAnswer[]): string {
   const values = Object.fromEntries(
     Object.entries(profile.values)
       .filter(([, v]) => !isEmpty(v))
-      .sort(([a], [b]) => a.localeCompare(b)),
+      .toSorted(([a], [b]) => a.localeCompare(b)),
   );
   return JSON.stringify({ ...profile, values, answers });
 }
