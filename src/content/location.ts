@@ -50,7 +50,7 @@ export async function fillLocations(targets: FieldTarget[], profile: Profile, br
   if (!saved) return 0;
 
   let filled = 0;
-  for (const t of targets.filter((t): t is LocationTarget => t.kind === "location")) {
+  for (const t of targets.filter((target): target is LocationTarget => target.kind === "location")) {
     const names = cityNames(saved);
     const tag = tagElement(t.element);
     const seen: string[] = [];
