@@ -5,7 +5,8 @@
   "scripts": {
     "build": "vite build && vite build -c vite.content.config.ts --mode content && vite build -c vite.content.config.ts --mode picker",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "oxlint -c .oxlintrc.json --deny-warnings src vite.config.ts vite.content.config.ts"
   },
   "type": "module",
   "dependencies": {
@@ -19,6 +20,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.2.1",
     "jsdom": "^30.1.3",
+    "oxlint": "^1.93.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vitest": "^5.1.0"
