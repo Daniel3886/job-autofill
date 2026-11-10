@@ -194,11 +194,11 @@ export function App() {
           <span className={`save-status${dirty ? " dirty" : ""}`}>
             {dirty ? "Unsaved changes" : "All changes saved"}
           </span>
-          <button type="button" className="secondary" disabled={saving || !dirty} onClick={resetChanges}>
-            Reset changes
-          </button>
           <button type="submit" className="primary" disabled={saving || !dirty}>
             {saving ? "Saving…" : "Save profile"}
+          </button>
+          <button type="button" className="secondary" disabled={saving || !dirty} onClick={resetChanges}>
+            Reset changes
           </button>
         </div>
       </form>
