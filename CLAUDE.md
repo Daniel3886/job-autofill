@@ -64,7 +64,3 @@ Fix what you find before opening the PR, and mention anything left open in the P
 - The description lists the key things the PR implements, anything deliberately left out, and which checks ran.
 - No "Generated with Claude Code" line or similar in the description.
 - Do not merge unless asked. When asked, merge locally with `git merge --no-ff` so the merge commit uses the noreply address, then push.
-
-## Local-only files
-
-`.vibe-wise/` holds local learning notes. It is git-ignored and must never be committed.
