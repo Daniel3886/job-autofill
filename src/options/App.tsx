@@ -501,12 +501,23 @@ function SavedAnswersSection({
   answers: SavedAnswer[];
   onChange: (answers: SavedAnswer[]) => void;
 }) {
+  // The question decides which form fields an answer fills, so it changes only on Done.
+  // One question is edited at a time; draft holds its text until then.
+  const [editing, setEditing] = useState<{ index: number; draft: string } | null>(null);
+
   function updateRow(index: number, patch: Partial<SavedAnswer>) {
     onChange(answers.map((a, i) => (i === index ? { ...a, ...patch } : a)));
   }
 
   function removeRow(index: number) {
+    setEditing(null);
     onChange(answers.filter((_, i) => i !== index));
+  }
+
+  function finishEditing() {
+    if (editing === null || editing.draft.trim() === "") return;
+    updateRow(editing.index, { question: editing.draft });
+    setEditing(null);
   }
 
   return (
@@ -520,50 +531,99 @@ function SavedAnswersSection({
         add one, right-click the extension icon on a job form and choose "Pick a field and save an answer", or press
         Alt+Shift+I (Option+Shift+I on a Mac).
       </p>
-      {answers.length === 0 && <p className="empty">No saved answers yet.</p>}
-      <div className="answer-list">
-        {answers.map((row, index) => (
-          <details className="answer-card" key={`${index}-${row.savedAt}`}>
-            <summary>
-              <span className="answer-summary">
-                <span className="answer-question">{row.question.trim() || "No question"}</span>
-                <span className="answer-preview">{row.answer.trim() || "No answer"}</span>
-              </span>
-              <button
-                type="button"
-                className="answer-x"
-                aria-label={`Remove saved answer: ${row.question.trim() || "No question"}`}
-                title="Remove"
-                onClick={(e) => {
-                  e.preventDefault();
-                  removeRow(index);
-                }}
+      {answers.length === 0 ? (
+        <p className="empty">No saved answers yet.</p>
+      ) : (
+        <div className="answer-table" role="table" aria-label="Saved answers">
+          <div className="answer-row answer-head" role="row">
+            <span role="columnheader">Question</span>
+            <span role="columnheader">Answer</span>
+            <span role="columnheader" className="visually-hidden">
+              Actions
+            </span>
+          </div>
+          {answers.map((row, index) => {
+            const question = row.question.trim() || "No question";
+            const draft = editing?.index === index ? editing.draft : null;
+            return (
+              <div
+                className={`answer-row${draft === null ? "" : " editing"}`}
+                role="row"
+                key={`${index}-${row.savedAt}`}
               >
-                <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-                  <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                </svg>
-              </button>
-            </summary>
-            <div className="answer-body">
-              <label>
-                <span>Question</span>
-                <textarea
-                  rows={2}
-                  value={row.question}
-                  onChange={(e) => updateRow(index, { question: e.target.value })}
-                />
-              </label>
-              <label>
-                <span>Answer</span>
-                <input type="text" value={row.answer} onChange={(e) => updateRow(index, { answer: e.target.value })} />
-              </label>
-              <button type="button" className="secondary remove" onClick={() => removeRow(index)}>
-                Remove
-              </button>
-            </div>
-          </details>
-        ))}
-      </div>
+                <div role="cell" className="answer-question">
+                  {draft === null ? (
+                    question
+                  ) : (
+                    <div className="question-edit">
+                      <textarea
+                        rows={2}
+                        aria-label="Question"
+                        autoFocus
+                        value={draft}
+                        onChange={(e) => setEditing({ index, draft: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") setEditing(null);
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            finishEditing();
+                          }
+                        }}
+                      />
+                      <div className="question-edit-buttons">
+                        <button type="button" className="secondary" onClick={() => setEditing(null)}>
+                          Cancel
+                        </button>
+                        <button type="button" disabled={draft.trim() === ""} onClick={finishEditing}>
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div role="cell" className="answer-value">
+                  <input
+                    type="text"
+                    aria-label={`Answer to: ${question}`}
+                    value={row.answer}
+                    onChange={(e) => updateRow(index, { answer: e.target.value })}
+                  />
+                </div>
+                <div role="cell" className="answer-actions">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`Edit question: ${question}`}
+                    title="Edit question"
+                    onClick={() => setEditing({ index, draft: row.question })}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+                      <path
+                        d="M11 2.5l2.5 2.5L5.5 13H3v-2.5z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-button danger"
+                    aria-label={`Remove saved answer: ${question}`}
+                    title="Remove"
+                    onClick={() => removeRow(index)}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                      <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </fieldset>
   );
 }
