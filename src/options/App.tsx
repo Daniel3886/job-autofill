@@ -171,7 +171,7 @@ export function App() {
             <SalarySection salaries={profile.salaries ?? []} onChange={updateSalaries} />
           </div>
 
-          <div className="column answers-column">
+          <div className="answers-row">
             <SavedAnswersSection answers={answers} onChange={setAnswers} />
           </div>
         </div>
@@ -511,54 +511,59 @@ function SavedAnswersSection({
 
   return (
     <fieldset>
-      <legend>Saved answers</legend>
+      <legend>
+        Saved answers
+        {answers.length > 0 && <span className="count">{answers.length}</span>}
+      </legend>
       <p className="hint">
         Filled into any form field whose question matches exactly (case, Polish letters and punctuation are ignored). To
         add one, right-click the extension icon on a job form and choose "Pick a field and save an answer", or press
         Alt+Shift+I (Option+Shift+I on a Mac).
       </p>
       {answers.length === 0 && <p className="empty">No saved answers yet.</p>}
-      {answers.map((row, index) => (
-        <details className="answer-card" key={`${index}-${row.savedAt}`}>
-          <summary>
-            <span className="answer-summary">
-              <span className="answer-question">{row.question.trim() || "No question"}</span>
-              <span className="answer-preview">{row.answer.trim() || "No answer"}</span>
-            </span>
-            <button
-              type="button"
-              className="answer-x"
-              aria-label={`Remove saved answer: ${row.question.trim() || "No question"}`}
-              title="Remove"
-              onClick={(e) => {
-                e.preventDefault();
-                removeRow(index);
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-                <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-            </button>
-          </summary>
-          <div className="answer-body">
-            <label>
-              <span>Question</span>
-              <textarea
-                rows={2}
-                value={row.question}
-                onChange={(e) => updateRow(index, { question: e.target.value })}
-              />
-            </label>
-            <label>
-              <span>Answer</span>
-              <input type="text" value={row.answer} onChange={(e) => updateRow(index, { answer: e.target.value })} />
-            </label>
-            <button type="button" className="secondary remove" onClick={() => removeRow(index)}>
-              Remove
-            </button>
-          </div>
-        </details>
-      ))}
+      <div className="answer-list">
+        {answers.map((row, index) => (
+          <details className="answer-card" key={`${index}-${row.savedAt}`}>
+            <summary>
+              <span className="answer-summary">
+                <span className="answer-question">{row.question.trim() || "No question"}</span>
+                <span className="answer-preview">{row.answer.trim() || "No answer"}</span>
+              </span>
+              <button
+                type="button"
+                className="answer-x"
+                aria-label={`Remove saved answer: ${row.question.trim() || "No question"}`}
+                title="Remove"
+                onClick={(e) => {
+                  e.preventDefault();
+                  removeRow(index);
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                  <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </button>
+            </summary>
+            <div className="answer-body">
+              <label>
+                <span>Question</span>
+                <textarea
+                  rows={2}
+                  value={row.question}
+                  onChange={(e) => updateRow(index, { question: e.target.value })}
+                />
+              </label>
+              <label>
+                <span>Answer</span>
+                <input type="text" value={row.answer} onChange={(e) => updateRow(index, { answer: e.target.value })} />
+              </label>
+              <button type="button" className="secondary remove" onClick={() => removeRow(index)}>
+                Remove
+              </button>
+            </div>
+          </details>
+        ))}
+      </div>
     </fieldset>
   );
 }

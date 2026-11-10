@@ -80,8 +80,8 @@ form {
     gap: 24px;
   }
 
-  .answers-column {
-    grid-column: 2;
+  .answers-row {
+    grid-column: 1 / -1;
   }
 }
 
@@ -422,6 +422,41 @@ button.add {
   color: var(--accent);
 }
 
+legend .count {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--muted);
+  font-size: 0.8em;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+/* Cards flow into as many columns as fit, so a long list uses the full width
+   instead of one tall stack. An open card takes the whole row for editing. */
+.answer-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 10px;
+}
+
+.answer-list:empty {
+  display: none;
+}
+
+.answer-card[open] {
+  grid-column: 1 / -1;
+}
+
+/* Closed cards in the same row share its height, so the row reads as one line. */
+.answer-card:not([open]) > summary {
+  box-sizing: border-box;
+  height: 100%;
+}
+
 .answer-card {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -496,14 +531,19 @@ button.add {
   display: none;
 }
 
-.answer-question,
 .answer-preview {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* Up to two lines, so long questions stay readable in a narrower card. */
 .answer-question {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
   font-weight: 600;
 }
 
