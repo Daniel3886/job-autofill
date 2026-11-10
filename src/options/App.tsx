@@ -31,12 +31,29 @@ interface ToastMessage {
 
 type ShowToast = (kind: ToastMessage["kind"], text: string) => void;
 
+function isEmpty(value: unknown): boolean {
+  return value === "" || (Array.isArray(value) && value.length === 0);
+}
+
+function snapshot(profile: Profile, answers: SavedAnswer[]): string {
+  const values = Object.fromEntries(
+    Object.entries(profile.values)
+      .filter(([, v]) => !isEmpty(v))
+      .toSorted(([a], [b]) => a.localeCompare(b)),
+  );
+  return JSON.stringify({ ...profile, values, answers });
+}
+
 export function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [answers, setAnswers] = useState<SavedAnswer[]>([]);
+  // What is in storage, so Reset can bring the form back to it.
+  const [saved, setSaved] = useState<{ profile: Profile; answers: SavedAnswer[] } | null>(null);
+  // Bumped on Reset so sections with their own state (question edits, salary notes) start fresh.
+  const [resetCount, setResetCount] = useState(0);
   const toastTimer = useRef<number | undefined>(undefined);
 
   const showToast = useCallback<ShowToast>((kind, text) => {
@@ -46,12 +63,25 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    profileStore
-      .get()
-      .then((p) => setProfile({ ...p, languages: getLanguages(p), salaries: getSalaries(p) }))
+    Promise.all([profileStore.get(), profileStore.getAnswers()])
+      .then(([p, a]) => {
+        const loaded = { ...p, languages: getLanguages(p), salaries: getSalaries(p) };
+        setProfile(loaded);
+        setAnswers(a);
+        setSaved({ profile: loaded, answers: a });
+      })
       .catch(() => setLoadFailed(true));
-    profileStore.getAnswers().then(setAnswers, () => setLoadFailed(true));
   }, []);
+
+  const dirty =
+    profile !== null && saved !== null && snapshot(profile, answers) !== snapshot(saved.profile, saved.answers);
+
+  function resetChanges() {
+    if (!saved) return;
+    setProfile(saved.profile);
+    setAnswers(saved.answers);
+    setResetCount((n) => n + 1);
+  }
 
   function update(id: string, value: ProfileValue) {
     setProfile((p) => (p ? { ...p, values: { ...p.values, [id]: value } } : p));
@@ -82,6 +112,7 @@ export function App() {
         profileStore.saveAnswers(keptAnswers),
       ]);
       setAnswers(keptAnswers);
+      setSaved({ profile, answers: keptAnswers });
       showToast("success", "Profile saved");
     } catch {
       showToast("error", "Could not save your profile. Try again.");
@@ -102,55 +133,72 @@ export function App() {
         empty here, or without an exact match on the form, is left for you to fill.
       </p>
       <form onSubmit={onSubmit}>
-        <fieldset>
-          <legend>Personal details</legend>
-          {TEXT_FIELDS.map(({ id, label, inputType }) => (
-            <label key={id}>
-              <span>{label}</span>
-              <input type={inputType} value={getText(profile, id)} onChange={(e) => update(id, e.target.value)} />
-            </label>
-          ))}
-        </fieldset>
+        <div className="sections">
+          <div className="column">
+            <fieldset>
+              <legend>Personal details</legend>
+              {TEXT_FIELDS.map(({ id, label, inputType }) => (
+                <label key={id}>
+                  <span>{label}</span>
+                  <input type={inputType} value={getText(profile, id)} onChange={(e) => update(id, e.target.value)} />
+                </label>
+              ))}
+            </fieldset>
+          </div>
 
-        <fieldset>
-          <legend>Links</legend>
-          <p className="hint">Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
-          {LINK_FIELDS.map(({ id, label, placeholder }) => (
-            <label key={id}>
-              <span>{label}</span>
-              <input
-                type="url"
-                placeholder={placeholder}
-                value={getText(profile, id)}
-                onChange={(e) => update(id, e.target.value)}
-              />
-            </label>
-          ))}
-        </fieldset>
+          <div className="column">
+            <CvSection showToast={showToast} />
 
-        <CvSection showToast={showToast} />
+            <fieldset>
+              <legend>Preferences</legend>
+              {CHOICE_FIELDS.map((field) => (
+                <ChoiceInput
+                  key={field.id}
+                  field={field}
+                  value={getList(profile, field.id)}
+                  onChange={(v) => update(field.id, v)}
+                />
+              ))}
+            </fieldset>
+          </div>
 
-        <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
+          {/* Three short fields side by side, so Links stays one row tall. */}
+          <fieldset className="links-row">
+            <legend>Links</legend>
+            <p className="hint">Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
+            <div className="link-fields">
+              {LINK_FIELDS.map(({ id, label, placeholder }) => (
+                <label key={id}>
+                  <span>{label}</span>
+                  <input
+                    type="url"
+                    placeholder={placeholder}
+                    value={getText(profile, id)}
+                    onChange={(e) => update(id, e.target.value)}
+                  />
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
-        <fieldset>
-          <legend>Preferences</legend>
-          {CHOICE_FIELDS.map((field) => (
-            <ChoiceInput
-              key={field.id}
-              field={field}
-              value={getList(profile, field.id)}
-              onChange={(v) => update(field.id, v)}
-            />
-          ))}
-        </fieldset>
+          {/* Languages and salary share a row so both start at the same height. */}
+          <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
+          <SalarySection key={resetCount} salaries={profile.salaries ?? []} onChange={updateSalaries} />
 
-        <SalarySection salaries={profile.salaries ?? []} onChange={updateSalaries} />
-
-        <SavedAnswersSection answers={answers} onChange={setAnswers} />
+          <div className="answers-row">
+            <SavedAnswersSection key={resetCount} answers={answers} onChange={setAnswers} />
+          </div>
+        </div>
 
         <div className="actions">
-          <button type="submit" disabled={saving}>
+          <span className={`save-status${dirty ? " dirty" : ""}`}>
+            {dirty ? "Unsaved changes" : "All changes saved"}
+          </span>
+          <button type="submit" className="primary" disabled={saving || !dirty}>
             {saving ? "Saving…" : "Save profile"}
+          </button>
+          <button type="button" className="secondary" disabled={saving || !dirty} onClick={resetChanges}>
+            Reset changes
           </button>
         </div>
       </form>
@@ -176,6 +224,10 @@ function Toast({ toast, onClose }: { toast: ToastMessage | null; onClose: () => 
     </div>
   );
 }
+
+// Enough for real profiles while keeping the page short.
+const MAX_LANGUAGES = 5;
+const MAX_SALARIES = 5;
 
 function LanguagesSection({
   languages,
@@ -229,14 +281,18 @@ function LanguagesSection({
           </button>
         </div>
       ))}
-      {nextLanguage && (
-        <button
-          type="button"
-          className="secondary add"
-          onClick={() => onChange([...languages, { language: nextLanguage.code, level: "" }])}
-        >
-          + Add language
-        </button>
+      {languages.length >= MAX_LANGUAGES ? (
+        <p className="limit-note">You can add up to {MAX_LANGUAGES} languages.</p>
+      ) : (
+        nextLanguage && (
+          <button
+            type="button"
+            className="secondary add"
+            onClick={() => onChange([...languages, { language: nextLanguage.code, level: "" }])}
+          >
+            + Add language
+          </button>
+        )
       )}
     </fieldset>
   );
@@ -260,9 +316,7 @@ function ChoiceInput({
             <input
               type="checkbox"
               checked={value.includes(o.value)}
-              onChange={(e) =>
-                onChange(e.target.checked ? [...value, o.value] : value.filter((v) => v !== o.value))
-              }
+              onChange={(e) => onChange(e.target.checked ? [...value, o.value] : value.filter((v) => v !== o.value))}
             />
             {o.label}
           </label>
@@ -380,7 +434,10 @@ function SalarySection({
     const converted = formatAmount(convertAmount(amount, row.period, period), period);
     updateRow(index, { period, amount: converted });
     const from = SALARY_PERIODS.find((p) => p.value === row.period)?.label;
-    setNote(index, `Converted from ${row.amount} ${from} at ${HOURS_PER_MONTH} working hours a month. Adjust if needed.`);
+    setNote(
+      index,
+      `Converted from ${row.amount} ${from} at ${HOURS_PER_MONTH} working hours a month. Adjust if needed.`,
+    );
   }
 
   function removeRow(index: number) {
@@ -451,13 +508,17 @@ function SalarySection({
           {notes[index] && <p className="row-note">{notes[index]}</p>}
         </div>
       ))}
-      <button
-        type="button"
-        className="secondary add"
-        onClick={() => onChange([...salaries, { amount: "", contract: "b2b", period: "month", basis: "net" }])}
-      >
-        + Add salary
-      </button>
+      {salaries.length >= MAX_SALARIES ? (
+        <p className="limit-note">You can add up to {MAX_SALARIES} salary expectations.</p>
+      ) : (
+        <button
+          type="button"
+          className="secondary add"
+          onClick={() => onChange([...salaries, { amount: "", contract: "b2b", period: "month", basis: "net" }])}
+        >
+          + Add salary
+        </button>
+      )}
     </fieldset>
   );
 }
@@ -469,60 +530,129 @@ function SavedAnswersSection({
   answers: SavedAnswer[];
   onChange: (answers: SavedAnswer[]) => void;
 }) {
+  // The question decides which form fields an answer fills, so it changes only on Done.
+  // One question is edited at a time; draft holds its text until then.
+  const [editing, setEditing] = useState<{ index: number; draft: string } | null>(null);
+
   function updateRow(index: number, patch: Partial<SavedAnswer>) {
     onChange(answers.map((a, i) => (i === index ? { ...a, ...patch } : a)));
   }
 
   function removeRow(index: number) {
+    setEditing(null);
     onChange(answers.filter((_, i) => i !== index));
+  }
+
+  function finishEditing() {
+    if (editing === null || editing.draft.trim() === "") return;
+    updateRow(editing.index, { question: editing.draft });
+    setEditing(null);
   }
 
   return (
     <fieldset>
-      <legend>Saved answers</legend>
+      <legend>
+        Saved answers
+        {answers.length > 0 && <span className="count">{answers.length}</span>}
+      </legend>
       <p className="hint">
-        Filled into any form field whose question matches exactly (case, Polish letters and punctuation are ignored).
-        To add one, right-click the extension icon on a job form and choose "Pick a field and save an answer", or press
+        Filled into any form field whose question matches exactly (case, Polish letters and punctuation are ignored). To
+        add one, right-click the extension icon on a job form and choose "Pick a field and save an answer", or press
         Alt+Shift+I (Option+Shift+I on a Mac).
       </p>
-      {answers.length === 0 && <p className="empty">No saved answers yet.</p>}
-      {answers.map((row, index) => (
-        <details className="answer-card" key={`${index}-${row.savedAt}`}>
-          <summary>
-            <span className="answer-summary">
-              <span className="answer-question">{row.question.trim() || "No question"}</span>
-              <span className="answer-preview">{row.answer.trim() || "No answer"}</span>
+      {answers.length === 0 ? (
+        <p className="empty">No saved answers yet.</p>
+      ) : (
+        <div className="answer-table" role="table" aria-label="Saved answers">
+          <div className="answer-row answer-head" role="row">
+            <span role="columnheader">Question</span>
+            <span role="columnheader">Answer</span>
+            <span role="columnheader" className="visually-hidden">
+              Actions
             </span>
-            <button
-              type="button"
-              className="answer-x"
-              aria-label={`Remove saved answer: ${row.question.trim() || "No question"}`}
-              title="Remove"
-              onClick={(e) => {
-                e.preventDefault();
-                removeRow(index);
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-                <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-            </button>
-          </summary>
-          <div className="answer-body">
-            <label>
-              <span>Question</span>
-              <textarea rows={2} value={row.question} onChange={(e) => updateRow(index, { question: e.target.value })} />
-            </label>
-            <label>
-              <span>Answer</span>
-              <input type="text" value={row.answer} onChange={(e) => updateRow(index, { answer: e.target.value })} />
-            </label>
-            <button type="button" className="secondary remove" onClick={() => removeRow(index)}>
-              Remove
-            </button>
           </div>
-        </details>
-      ))}
+          {answers.map((row, index) => {
+            const question = row.question.trim() || "No question";
+            const draft = editing?.index === index ? editing.draft : null;
+            return (
+              <div
+                className={`answer-row${draft === null ? "" : " editing"}`}
+                role="row"
+                key={`${index}-${row.savedAt}`}
+              >
+                <div role="cell" className="answer-question">
+                  {draft === null ? (
+                    question
+                  ) : (
+                    <div className="question-edit">
+                      <textarea
+                        rows={2}
+                        aria-label="Question"
+                        autoFocus
+                        value={draft}
+                        onChange={(e) => setEditing({ index, draft: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") setEditing(null);
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            finishEditing();
+                          }
+                        }}
+                      />
+                      <div className="question-edit-buttons">
+                        <button type="button" className="secondary" onClick={() => setEditing(null)}>
+                          Cancel
+                        </button>
+                        <button type="button" disabled={draft.trim() === ""} onClick={finishEditing}>
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div role="cell" className="answer-value">
+                  <input
+                    type="text"
+                    aria-label={`Answer to: ${question}`}
+                    value={row.answer}
+                    onChange={(e) => updateRow(index, { answer: e.target.value })}
+                  />
+                </div>
+                <div role="cell" className="answer-actions">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`Edit question: ${question}`}
+                    title="Edit question"
+                    onClick={() => setEditing({ index, draft: row.question })}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+                      <path
+                        d="M11 2.5l2.5 2.5L5.5 13H3v-2.5z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-button danger"
+                    aria-label={`Remove saved answer: ${question}`}
+                    title="Remove"
+                    onClick={() => removeRow(index)}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                      <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </fieldset>
   );
 }

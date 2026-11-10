@@ -5,10 +5,13 @@
   --border: #d0d0d0;
   --surface: #f6f7f9;
   --accent: #1b5fd1;
+  --primary: #1b5fd1;
+  --primary-hover: #164fb0;
+  --warning: #a35c00;
   --success: #1b7f3b;
   --danger: #b00020;
-  --toast-bg: #1a1a1a;
-  --toast-fg: #ffffff;
+  --toast-success: #1e7a3c;
+  --toast-error: #b3261e;
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235c5c5c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   color-scheme: light dark;
   font-family: system-ui, sans-serif;
@@ -22,10 +25,13 @@
     --border: #3a3b3e;
     --surface: #232427;
     --accent: #6ea0ff;
+    --primary: #2f6fe4;
+    --primary-hover: #4580ec;
+    --warning: #f0b45a;
     --success: #2f9e5a;
     --danger: #d64550;
-    --toast-bg: #ececec;
-    --toast-fg: #1a1a1a;
+    --toast-success: #1e7a3c;
+    --toast-error: #b3261e;
     --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23a0a0a0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   }
 }
@@ -37,9 +43,9 @@ body {
 }
 
 main {
-  max-width: 480px;
+  max-width: 1120px;
   margin: 48px auto;
-  padding: 0 16px;
+  padding: 0 32px;
 }
 
 h1 {
@@ -53,8 +59,63 @@ h1 {
 
 form {
   display: grid;
-  gap: 14px;
+  gap: 20px;
   margin-top: 24px;
+}
+
+.sections,
+.column {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
+.link-fields {
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 960px) {
+  .sections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  /* The last section in each column grows so both columns end level. */
+  .column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .column > :last-child {
+    flex: 1;
+  }
+
+  .links-row {
+    grid-column: 1 / -1;
+  }
+
+  .link-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .answers-row {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  main {
+    margin: 24px auto;
+    padding: 0 16px;
+  }
+
+  .actions {
+    margin: 0 -16px;
+    padding: 12px 16px;
+  }
 }
 
 label {
@@ -91,9 +152,38 @@ select:focus {
 }
 
 .actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin: 0 -32px;
+  padding: 14px 32px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.save-status {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.save-status.dirty {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  color: var(--fg);
+}
+
+.save-status.dirty::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warning);
 }
 
 button {
@@ -101,17 +191,31 @@ button {
   padding: 8px 18px;
   border: 0;
   border-radius: 6px;
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   cursor: pointer;
 }
 
-button:disabled {
-  opacity: 0.6;
+button.primary {
+  padding: 10px 22px;
+  font-weight: 600;
 }
 
+button.primary:not(:disabled):hover {
+  background: var(--primary-hover);
+}
+
+button:disabled {
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--border);
+  cursor: not-allowed;
+}
+
+/* Sections stretch to line up with their neighbours; keep content at the top. */
 fieldset {
   display: grid;
+  align-content: start;
   gap: 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -188,6 +292,12 @@ button.secondary {
   border: 1px solid var(--border);
 }
 
+button.secondary:disabled {
+  color: var(--muted);
+  box-shadow: none;
+  opacity: 0.6;
+}
+
 .file-pick input {
   padding: 6px;
 }
@@ -213,6 +323,12 @@ button.add {
   justify-self: start;
 }
 
+.limit-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
 @media (max-width: 480px) {
   .language-row {
     grid-template-columns: 1fr 1fr;
@@ -225,9 +341,10 @@ button.add {
 
 .toast-region {
   position: fixed;
+  z-index: 2;
   left: 0;
   right: 0;
-  bottom: 24px;
+  bottom: 84px;
   display: flex;
   justify-content: center;
   padding: 0 16px;
@@ -240,8 +357,8 @@ button.add {
   gap: 10px;
   padding: 10px 12px 10px 14px;
   border-radius: 8px;
-  background: var(--toast-bg);
-  color: var(--toast-fg);
+  color: #fff;
+  font-weight: 500;
   box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
   pointer-events: auto;
   animation: toast-in 180ms ease-out;
@@ -255,15 +372,23 @@ button.add {
   border-radius: 50%;
   font-size: 12px;
   font-weight: 700;
-  color: #fff;
+  background: #fff;
+}
+
+.toast-success {
+  background: var(--toast-success);
 }
 
 .toast-success .toast-icon {
-  background: var(--success);
+  color: var(--toast-success);
+}
+
+.toast-error {
+  background: var(--toast-error);
 }
 
 .toast-error .toast-icon {
-  background: var(--danger);
+  color: var(--toast-error);
 }
 
 .toast-close {
@@ -290,7 +415,8 @@ button.add {
 
 .salary-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Contract is wider so "Employment contract" fits in its select. */
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
   align-items: end;
 }
@@ -335,108 +461,147 @@ button.add {
   color: var(--accent);
 }
 
-.answer-card {
+legend .count {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--muted);
+  font-size: 0.8em;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+/* One row per answer: the question reads in full, the answer is edited in
+   place, and editing a question only grows its own row. */
+.answer-table {
   border: 1px solid var(--border);
   border-radius: 8px;
+  overflow: hidden;
+}
+
+.answer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 320px) 68px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 8px 8px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.answer-row:first-child {
+  border-top: 0;
+}
+
+.answer-head {
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.answer-row.editing {
+  align-items: start;
   background: var(--surface);
 }
 
-.answer-card > summary {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  cursor: pointer;
-  list-style: none;
+.answer-question {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
-.answer-card > summary::-webkit-details-marker {
-  display: none;
+.answer-value input,
+.question-edit textarea {
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.answer-card > summary::before {
-  content: "";
-  flex: none;
-  width: 12px;
-  height: 8px;
-  background: var(--chevron) no-repeat center;
-  transform: rotate(-90deg);
-  transition: transform 0.15s;
-}
-
-.answer-card[open] > summary::before {
-  transform: none;
-}
-
-.answer-card > summary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 8px;
-}
-
-.answer-summary {
+.question-edit {
   display: grid;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
+  gap: 6px;
 }
 
-.answer-x {
-  flex: none;
+/* Grows with the question so long ones are never cut off. */
+.question-edit textarea {
+  field-sizing: content;
+  min-height: 3em;
+}
+
+.question-edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.question-edit-buttons button {
+  padding: 6px 14px;
+  font-size: 0.9em;
+}
+
+.answer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.answer-row.editing .answer-actions {
+  padding-top: 2px;
+}
+
+.icon-button {
   display: grid;
   place-items: center;
   width: 30px;
   height: 30px;
   padding: 0;
-  border: 0;
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
-  cursor: pointer;
 }
 
-.answer-x:hover {
+.icon-button:hover {
+  color: var(--fg);
+  background: var(--surface);
+}
+
+.icon-button.danger:hover {
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 12%, transparent);
 }
 
-.answer-x:focus-visible {
+.icon-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
-.answer-card[open] .answer-x {
-  display: none;
-}
-
-.answer-question,
-.answer-preview {
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  clip-path: inset(50%);
   white-space: nowrap;
 }
 
-.answer-question {
-  font-weight: 600;
-}
+@media (max-width: 640px) {
+  .answer-row {
+    grid-template-columns: minmax(0, 1fr) 68px;
+  }
 
-.answer-preview {
-  font-size: 0.9em;
-  color: var(--muted);
-}
+  .answer-value {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
 
-.answer-card[open] .answer-preview {
-  display: none;
-}
+  .answer-head {
+    display: none;
+  }
 
-.answer-body {
-  display: grid;
-  gap: 10px;
-  padding: 2px 12px 12px 34px;
-}
-
-.answer-body .remove {
-  justify-self: end;
+  .answer-head + .answer-row {
+    border-top: 0;
+  }
 }
 
 textarea {
