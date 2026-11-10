@@ -208,6 +208,10 @@ function Toast({ toast, onClose }: { toast: ToastMessage | null; onClose: () => 
   );
 }
 
+// Enough for real profiles while keeping the page short.
+const MAX_LANGUAGES = 5;
+const MAX_SALARIES = 5;
+
 function LanguagesSection({
   languages,
   onChange,
@@ -260,14 +264,18 @@ function LanguagesSection({
           </button>
         </div>
       ))}
-      {nextLanguage && (
-        <button
-          type="button"
-          className="secondary add"
-          onClick={() => onChange([...languages, { language: nextLanguage.code, level: "" }])}
-        >
-          + Add language
-        </button>
+      {languages.length >= MAX_LANGUAGES ? (
+        <p className="limit-note">You can add up to {MAX_LANGUAGES} languages.</p>
+      ) : (
+        nextLanguage && (
+          <button
+            type="button"
+            className="secondary add"
+            onClick={() => onChange([...languages, { language: nextLanguage.code, level: "" }])}
+          >
+            + Add language
+          </button>
+        )
       )}
     </fieldset>
   );
@@ -483,13 +491,17 @@ function SalarySection({
           {notes[index] && <p className="row-note">{notes[index]}</p>}
         </div>
       ))}
-      <button
-        type="button"
-        className="secondary add"
-        onClick={() => onChange([...salaries, { amount: "", contract: "b2b", period: "month", basis: "net" }])}
-      >
-        + Add salary
-      </button>
+      {salaries.length >= MAX_SALARIES ? (
+        <p className="limit-note">You can add up to {MAX_SALARIES} salary expectations.</p>
+      ) : (
+        <button
+          type="button"
+          className="secondary add"
+          onClick={() => onChange([...salaries, { amount: "", contract: "b2b", period: "month", basis: "net" }])}
+        >
+          + Add salary
+        </button>
+      )}
     </fieldset>
   );
 }
