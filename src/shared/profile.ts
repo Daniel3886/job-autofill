@@ -67,8 +67,8 @@ export interface SalaryExpectation {
 
 export const SALARY_CONTRACTS: { value: SalaryContract; label: string }[] = [
   { value: "b2b", label: "B2B" },
-  { value: "uop", label: "UoP" },
-  { value: "civil", label: "Zlecenie / dzieło" },
+  { value: "uop", label: "Employment contract" },
+  { value: "civil", label: "Civil law contract" },
 ];
 
 export const SALARY_PERIODS: { value: SalaryPeriod; label: string }[] = [
@@ -114,9 +114,9 @@ export const CHOICE_FIELDS: ChoiceField[] = [
     label: "Contract types you accept",
     multiple: true,
     options: [
-      { value: "uop", label: "Employment contract (UoP)" },
+      { value: "uop", label: "Employment contract" },
       { value: "b2b", label: "B2B" },
-      { value: "civil", label: "Civil law contract (zlecenie / dzieło)" },
+      { value: "civil", label: "Civil law contract" },
     ],
   },
   {

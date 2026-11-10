@@ -378,7 +378,8 @@ button.add {
 
 .salary-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Contract is wider so "Employment contract" fits in its select. */
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
   align-items: end;
 }
