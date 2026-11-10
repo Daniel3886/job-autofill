@@ -20,7 +20,7 @@ export function collectTextInputs(
   exclude: Set<Element> = new Set(),
 ): TextLike[] {
   return [...root.querySelectorAll<TextLike>("input, textarea")].filter(
-    (el) => !exclude.has(el) && isFillableText(el, checkVisibility),
+    (el) => !exclude.has(el) && !el.closest(".selectize-control") && isFillableText(el, checkVisibility),
   );
 }
 

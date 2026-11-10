@@ -5,6 +5,8 @@
     "email": { "labels": ["adres email", "adres e-mail"] },
     "phone": { "labels": ["telefon", "numer telefonu", "komórka"] },
     "city": { "labels": ["miasto", "miejscowość", "lokalizacja"] },
+    "region": { "labels": ["województwo"] },
+    "country": { "labels": ["kraj"] },
     "salary": { "labels": ["wynagrodzenie", "oczekiwania finansowe", "stawka"] },
     "website": { "labels": ["strona www", "strona internetowa"] }
   },
@@ -72,5 +74,23 @@
   "cv": {
     "keywords": ["życiorys"],
     "otherDocuments": ["list motywacyjny", "certyfikat"]
-  }
+  },
+  "placePrefixes": ["województwo", "woj"],
+  "places": [
+    ["Warszawa", "Warsaw"],
+    ["Kraków", "Cracow"],
+    ["Wrocław"],
+    ["Łódź"],
+    ["Białystok"],
+    ["Bielsko-Biała"],
+    ["Bełchatów"],
+    ["Elbląg"],
+    ["Ełk"],
+    ["Głogów"],
+    ["Łomża"],
+    ["Płock"],
+    ["Słupsk"],
+    ["Wałbrzych"],
+    ["Włocławek"]
+  ]
 }

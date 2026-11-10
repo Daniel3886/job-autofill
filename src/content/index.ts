@@ -1,6 +1,7 @@
 import { profileStore } from "../shared/profileStore";
 import type { FillResultMessage, MainWorldRequest, SelectizeInfo } from "../shared/messages";
 import { collectTargets } from "./adapters";
+import { fillLocations } from "./location";
 import { executeActions, planFills, type FileSource, type MainWorldBridge } from "./plan";
 
 const bridge: MainWorldBridge = {
@@ -14,6 +15,10 @@ const bridge: MainWorldBridge = {
     const res = (await chrome.runtime.sendMessage(req)) as number | null;
     return typeof res === "number" ? res : 0;
   },
+  async searchSelectize(target, query) {
+    const req: MainWorldRequest = { type: "main-world", op: "searchSelectize", target, query };
+    return ((await chrome.runtime.sendMessage(req)) as SelectizeInfo | null) ?? null;
+  },
 };
 
 const files: FileSource = { loadCv: () => profileStore.getCv() };
@@ -22,7 +27,11 @@ async function run() {
   const [profile, answers] = await Promise.all([profileStore.get(), profileStore.getAnswers()]);
   const targets = collectTargets(document, true, answers);
   const actions = await planFills(targets, profile, bridge, files);
-  const filled = await executeActions(actions, bridge);
+  const located = await fillLocations(targets, profile, bridge).catch((err) => {
+    console.warn("Job Autofill: city fill failed", err);
+    return 0;
+  });
+  const filled = located + (await executeActions(actions, bridge));
 
   const result: FillResultMessage = { type: "fill-result", filled };
   await chrome.runtime.sendMessage(result);

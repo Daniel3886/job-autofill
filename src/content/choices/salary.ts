@@ -21,7 +21,7 @@ export function questionPeriod(question: string): SalaryPeriod {
 }
 
 export function salaryFor(question: string, profile: Profile): SalaryExpectation | null {
-  const has = (words: string[]) => words.some((w) => containsPhrase(question, w));
+  const has = (phrases: string[]) => phrases.some((w) => containsPhrase(question, w));
   const period = questionPeriod(question);
   const contracts = (Object.keys(CONTRACT_WORDS) as SalaryContract[]).filter((c) => has(CONTRACT_WORDS[c]));
   const net = has(NET);
@@ -59,9 +59,9 @@ export function parseSalaryRange(text: string): SalaryRange | null {
   const nums = [...raw.matchAll(/\d[\d\s.]*\d|\d/g)].map((m) => Number(m[0].replace(/[\s.]/g, "")));
   if (nums.length >= 2) return { min: Math.min(nums[0], nums[1]), max: Math.max(nums[0], nums[1]) };
   if (nums.length === 1) {
-    const words = normalize(raw);
-    if (BELOW.some((w) => containsPhrase(words, w))) return { min: 0, max: nums[0] };
-    if (ABOVE.some((w) => containsPhrase(words, w))) return { min: nums[0], max: Infinity };
+    const normalized = normalize(raw);
+    if (BELOW.some((w) => containsPhrase(normalized, w))) return { min: 0, max: nums[0] };
+    if (ABOVE.some((w) => containsPhrase(normalized, w))) return { min: nums[0], max: Infinity };
   }
   return null;
 }

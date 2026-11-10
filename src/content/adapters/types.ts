@@ -6,6 +6,7 @@ export type FieldTarget =
   | { kind: "select"; fieldId: string; question: string; element: HTMLSelectElement }
   | { kind: "radio"; fieldId: string; question: string; radios: HTMLInputElement[] }
   | { kind: "file"; fieldId: "cv"; question: string; element: HTMLInputElement }
+  | { kind: "location"; fieldId: "city"; question: string; element: HTMLSelectElement }
   | { kind: "answer"; element: TextLike; value: string };
 
 export interface CollectContext {

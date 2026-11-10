@@ -1,8 +1,10 @@
 import { classifyQuestion } from "../choices/choiceRules";
+import { classifyPlaceQuestion } from "../choices/places";
 import { isFillableText } from "../drivers/text";
 import type { TextFieldId } from "../fieldRules";
 import type { TextLike } from "../signals";
-import { normalize } from "../text";
+import { FIELD_RULES } from "../fieldRules";
+import { containsPhrase, normalize } from "../text";
 import type { FieldTarget, VendorAdapter } from "./types";
 
 const SID_TO_FIELD: Record<string, TextFieldId> = {
@@ -14,6 +16,8 @@ const SID_TO_FIELD: Record<string, TextFieldId> = {
 };
 
 const FORM = "form[name='dynamic_form']";
+
+const CITY_KEYWORDS = FIELD_RULES.find((r) => r.id === "city")?.keywords ?? [];
 
 export const traffitAdapter: VendorAdapter = {
   id: "traffit",
@@ -40,11 +44,18 @@ export const traffitAdapter: VendorAdapter = {
     for (const select of doc.querySelectorAll<HTMLSelectElement>(`${FORM} select`)) {
       if (ctx.claimed.has(select)) continue;
       ctx.claimed.add(select);
-      if (select.classList.contains("location-select")) continue;
-
       const label = select.closest(".form-group")?.querySelector("label");
       const question = normalize(label?.textContent ?? "");
-      const fieldId = classifyQuestion(question);
+
+      if (select.classList.contains("location-select")) {
+        if (isCitySelect(select, question) && !ctx.claimedFields.has("city")) {
+          ctx.claimedFields.add("city");
+          targets.push({ kind: "location", fieldId: "city", question, element: select });
+        }
+        continue;
+      }
+
+      const fieldId = classifyQuestion(question) ?? classifyPlaceQuestion(question);
       if (!fieldId) continue;
       ctx.claimedFields.add(fieldId);
       targets.push({ kind: "select", fieldId, question, element: select });
@@ -53,3 +64,9 @@ export const traffitAdapter: VendorAdapter = {
     return targets;
   },
 };
+
+function isCitySelect(select: HTMLSelectElement, question: string): boolean {
+  if (select.classList.contains("city")) return true;
+  if (select.classList.contains("country")) return false;
+  return CITY_KEYWORDS.some((k) => containsPhrase(question, k));
+}

@@ -5,7 +5,8 @@ export interface FillResultMessage {
 
 export type MainWorldRequest =
   | { type: "main-world"; op: "readSelectize"; targets: string[] }
-  | { type: "main-world"; op: "setSelectize"; items: SelectizeSetItem[] };
+  | { type: "main-world"; op: "setSelectize"; items: SelectizeSetItem[] }
+  | { type: "main-world"; op: "searchSelectize"; target: string; query: string };
 
 export interface SelectizeSetItem {
   target: string;
@@ -13,7 +14,7 @@ export interface SelectizeSetItem {
 }
 
 export interface SelectizeInfo {
-  options: { value: string; text: string }[];
+  options: { value: string; text: string; details?: string[] }[];
   multiple: boolean;
   hasValue: boolean;
 }

@@ -1,4 +1,5 @@
 import { classifyQuestion } from "../choices/choiceRules";
+import { classifyPlaceQuestion } from "../choices/places";
 import { collectRadioGroups } from "../drivers/radio";
 import { isSelectized } from "../drivers/select";
 import { collectTextInputs, isVisible } from "../drivers/text";
@@ -29,7 +30,7 @@ export const genericAdapter: VendorAdapter = {
       if (ctx.claimed.has(select) || select.disabled) continue;
       if (ctx.checkVisibility && !isSelectized(select) && !isVisible(select)) continue;
       const question = questionText(select);
-      const fieldId = classifyQuestion(question);
+      const fieldId = classifyQuestion(question) ?? classifyPlaceQuestion(question);
       if (fieldId && !ctx.claimedFields.has(fieldId)) {
         targets.push({ kind: "select", fieldId, question, element: select });
       }

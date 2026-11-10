@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Profile } from "../shared/profile";
 import type { SelectizeInfo } from "../shared/messages";
 import { collectTargets } from "./adapters";
+import { chooseLocation, cityNames, fillLocations } from "./location";
 import { executeActions, planFills, type MainWorldBridge } from "./plan";
 
 const PROFILE: Profile = {
@@ -27,14 +28,18 @@ const PROFILE: Profile = {
 };
 
 function noMainWorld(): MainWorldBridge {
-  return { readSelectize: vi.fn(async () => ({})), setSelectize: vi.fn(async () => 0) };
+  return {
+    readSelectize: vi.fn(async () => ({})),
+    setSelectize: vi.fn(async () => 0),
+    searchSelectize: vi.fn(async () => null),
+  };
 }
 
 async function fill(html: string, profile = PROFILE, bridge = noMainWorld()) {
   document.body.innerHTML = html;
   const targets = collectTargets(document, false);
   const actions = await planFills(targets, profile, bridge);
-  const filled = await executeActions(actions, bridge);
+  const filled = (await executeActions(actions, bridge)) + (await fillLocations(targets, profile, bridge));
   return { filled, bridge };
 }
 
@@ -56,7 +61,22 @@ const TRAFFIT = `
       ${group("f3", "Email", '<input type="text" id="f3" data-sid="email" autocomplete="email">')}
       ${group("f4", "Telefon komórkowy", '<input type="text" id="f4" data-sid="mobile">')}
       <div class="form__geo-wrapper">
-        ${group("loc-selectized", "Lokalizacja (City)", '<select id="loc" class="location-select city"></select>')}
+        ${group(
+          "country-selectized",
+          "Twoja lokalizacja (Kraj)",
+          `<select id="country" class="location-select country selectized" style="display:none"></select>
+          <div class="selectize-control single"><div class="selectize-input">
+            <input type="text" id="country-selectized" placeholder="Wpisz coś, aby wyszukać lokalizację">
+          </div></div>`,
+        )}
+        ${group(
+          "loc-selectized",
+          "Twoja lokalizacja (Miasto)",
+          `<select id="loc" class="location-select city selectized" style="display:none"></select>
+          <div class="selectize-control single"><div class="selectize-input">
+            <input type="text" id="loc-selectized" placeholder="Wpisz coś, aby wyszukać lokalizację">
+          </div></div>`,
+        )}
       </div>
       ${group(
         "en-selectized",
@@ -112,9 +132,10 @@ describe("Traffit adapter", () => {
     expect(filled).toBe(9);
   });
 
-  it("does not let the generic adapter touch the location selects", async () => {
+  it("does not type into the location search boxes", async () => {
     const { bridge } = await fill(TRAFFIT);
-    expect($<HTMLSelectElement>("#loc").value).toBe("");
+    expect($<HTMLInputElement>("#country-selectized").value).toBe("");
+    expect($<HTMLInputElement>("#loc-selectized").value).toBe("");
     expect(bridge.readSelectize).toHaveBeenCalledTimes(1);
     expect(vi.mocked(bridge.readSelectize).mock.calls[0][0]).toHaveLength(1);
   });
@@ -133,6 +154,7 @@ describe("Traffit adapter", () => {
     const bridge: MainWorldBridge = {
       readSelectize: vi.fn(async (targets: string[]) => ({ [targets[0]]: info })),
       setSelectize: vi.fn(async (items) => items.length),
+      searchSelectize: vi.fn(async () => null),
     };
     await fill(TRAFFIT, { ...PROFILE, values: { ...PROFILE.values, workMode: ["remote"] } }, bridge);
     const tag = $("#wm").getAttribute("data-job-autofill-target")!;
@@ -143,6 +165,7 @@ describe("Traffit adapter", () => {
     const bridge: MainWorldBridge = {
       readSelectize: vi.fn(async (targets: string[]) => ({ [targets[0]]: info })),
       setSelectize: vi.fn(async (items) => items.length),
+      searchSelectize: vi.fn(async () => null),
     };
     await fill(TRAFFIT, PROFILE, bridge);
     expect(bridge.setSelectize).not.toHaveBeenCalled();
@@ -160,9 +183,144 @@ describe("Traffit adapter", () => {
         [targets[0]]: { multiple: false, hasValue: true, options: [{ value: "481", text: "zdalny" }] },
       })),
       setSelectize: vi.fn(async () => 0),
+      searchSelectize: vi.fn(async () => null),
     };
     await fill(TRAFFIT, PROFILE, bridge);
     expect(bridge.setSelectize).not.toHaveBeenCalled();
+  });
+});
+
+describe("Traffit location dropdowns", () => {
+  const CITIES: SelectizeInfo = {
+    multiple: false,
+    hasValue: false,
+    options: [
+      { value: "c1", text: "Warszawa, mazowieckie, Polska" },
+      { value: "c2", text: "Warszawice, mazowieckie, Polska" },
+    ],
+  };
+
+  function locationBridge(cities: SelectizeInfo = CITIES) {
+    const searched: string[] = [];
+    const bridge: MainWorldBridge = {
+      readSelectize: vi.fn(async () => ({})),
+      setSelectize: vi.fn(async (items) => items.length),
+      searchSelectize: vi.fn(async (target: string, query: string) => {
+        searched.push(`${target === tagOf("#loc") ? "city" : "other"}:${query}`);
+        return cities;
+      }),
+    };
+    return { bridge, searched };
+  }
+
+  const tagOf = (sel: string) => $(sel).getAttribute("data-job-autofill-target");
+
+  it("searches only the city and picks the matching option", async () => {
+    const { bridge, searched } = locationBridge();
+    await fill(TRAFFIT, PROFILE, bridge);
+    expect(searched).toEqual(["city:Warszawa"]);
+    expect(bridge.setSelectize).toHaveBeenCalledWith([{ target: tagOf("#loc"), values: ["c1"] }]);
+    expect($("#country").hasAttribute("data-job-autofill-target")).toBe(false);
+  });
+
+  it("leaves a city the user already picked", async () => {
+    const { bridge } = locationBridge({ ...CITIES, hasValue: true });
+    await fill(TRAFFIT, PROFILE, bridge);
+    expect(bridge.setSelectize).not.toHaveBeenCalled();
+  });
+
+  it("does not search when the profile has no city", async () => {
+    const { bridge, searched } = locationBridge();
+    await fill(TRAFFIT, { ...PROFILE, values: { ...PROFILE.values, city: "" } }, bridge);
+    expect(searched).toEqual([]);
+  });
+});
+
+describe("city names", () => {
+  it("adds the Polish spelling for English names and names typed without ł", () => {
+    expect(cityNames("Warsaw")).toEqual(["Warsaw", "Warszawa"]);
+    expect(cityNames("Wroclaw")).toEqual(["Wroclaw", "Wrocław"]);
+    expect(cityNames("lodz")).toEqual(["lodz", "Łódź"]);
+    expect(cityNames("Kraków")).toEqual(["Kraków", "Cracow"]);
+    expect(cityNames("Gdynia")).toEqual(["Gdynia"]);
+  });
+
+  it("also searches the part before a comma or bracket", () => {
+    expect(cityNames("Warszawa, Polska")).toEqual(["Warszawa, Polska", "Warszawa", "Warsaw"]);
+    expect(cityNames("Warsaw (Poland)")).toEqual(["Warsaw (Poland)", "Warsaw", "Warszawa"]);
+  });
+});
+
+describe("chooseLocation", () => {
+  const opts = (...texts: string[]) => texts.map((text, i) => ({ value: String(i), text }));
+
+  it("prefers the city itself over villages with the same name", () => {
+    const options = [
+      { value: "68667", text: "Łódź", details: ["Polska", "Wielkopolskie", "Poznański", "Stęszew"] },
+      { value: "10487", text: "Łódź", details: ["Polska", "Łódzkie", "Łódź", "Łódź"] },
+    ];
+    expect(chooseLocation(["Łódź"], options)?.value).toBe("10487");
+  });
+
+  it("prefers an exact name", () => {
+    expect(chooseLocation(["Kraków"], opts("Kraków, małopolskie", "Kraków"))?.value).toBe("1");
+  });
+
+  it("matches the first part of a longer label", () => {
+    expect(chooseLocation(["Łódź"], opts("Łódź, łódzkie, Polska", "Łódzkie"))?.value).toBe("0");
+  });
+
+  it("takes the only result when no name matches", () => {
+    expect(chooseLocation(["Warsz"], opts("Warszawa"))?.value).toBe("0");
+  });
+
+  it("returns nothing when several results do not match", () => {
+    expect(chooseLocation(["Gdańsk"], opts("Gdynia", "Sopot"))).toBeNull();
+  });
+});
+
+describe("province and country dropdowns", () => {
+  const PLACES = `
+    <label for="w">Województwo *</label>
+    <select id="w"><option value="">Wybierz</option><option value="7">woj. małopolskie</option><option value="14">woj. mazowieckie</option></select>
+    <label for="k">Kraj</label>
+    <select id="k"><option value="">--</option><option value="DE">Niemcy</option><option value="PL">Polska</option></select>`;
+
+  const PLACE_PROFILE: Profile = { version: 1, values: { region: "Mazowieckie", country: "Polska" } };
+
+  it("picks the option with the saved name, ignoring a woj. prefix", async () => {
+    await fill(PLACES, PLACE_PROFILE);
+    expect($<HTMLSelectElement>("#w").value).toBe("14");
+    expect($<HTMLSelectElement>("#k").value).toBe("PL");
+  });
+
+  it("leaves the dropdown alone when no option has the saved name", async () => {
+    await fill(PLACES, { version: 1, values: { region: "Mazovia", country: "Poland" } });
+    expect($<HTMLSelectElement>("#w").value).toBe("");
+    expect($<HTMLSelectElement>("#k").value).toBe("");
+  });
+
+  it("fills a Selectize province dropdown", async () => {
+    const bridge: MainWorldBridge = {
+      readSelectize: vi.fn(async (targets: string[]) => ({
+        [targets[0]]: {
+          multiple: false,
+          hasValue: false,
+          options: [
+            { value: "a", text: "Województwo łódzkie" },
+            { value: "b", text: "Województwo mazowieckie" },
+          ],
+        },
+      })),
+      setSelectize: vi.fn(async (items) => items.length),
+      searchSelectize: vi.fn(async () => null),
+    };
+    await fill(
+      `<label for="s">Województwo</label><select id="s" class="selectized" style="display:none"></select><div class="selectize-control single"></div>`,
+      PLACE_PROFILE,
+      bridge,
+    );
+    expect(bridge.setSelectize).toHaveBeenCalledWith([{ target: $("#s").getAttribute("data-job-autofill-target"), values: ["b"] }]);
   });
 });
 
