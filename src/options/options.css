@@ -70,10 +70,9 @@ form {
   align-content: start;
 }
 
-/* Sections placed straight in the grid stretch to their row's height; keep
-   their content at the top. */
-.sections > fieldset {
-  align-content: start;
+.link-fields {
+  display: grid;
+  gap: 14px;
 }
 
 @media (min-width: 960px) {
@@ -82,8 +81,24 @@ form {
     gap: 24px;
   }
 
+  /* The last section in each column grows so both columns end level. */
   .column {
+    display: flex;
+    flex-direction: column;
     gap: 24px;
+  }
+
+  .column > :last-child {
+    flex: 1;
+  }
+
+  .links-row {
+    grid-column: 1 / -1;
+  }
+
+  .link-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
   }
 
   .answers-row {
@@ -195,8 +210,10 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* Sections stretch to line up with their neighbours; keep content at the top. */
 fieldset {
   display: grid;
+  align-content: start;
   gap: 14px;
   border: 1px solid var(--border);
   border-radius: 8px;

@@ -133,22 +133,6 @@ export function App() {
                 </label>
               ))}
             </fieldset>
-
-            <fieldset>
-              <legend>Links</legend>
-              <p className="hint">Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
-              {LINK_FIELDS.map(({ id, label, placeholder }) => (
-                <label key={id}>
-                  <span>{label}</span>
-                  <input
-                    type="url"
-                    placeholder={placeholder}
-                    value={getText(profile, id)}
-                    onChange={(e) => update(id, e.target.value)}
-                  />
-                </label>
-              ))}
-            </fieldset>
           </div>
 
           <div className="column">
@@ -166,6 +150,25 @@ export function App() {
               ))}
             </fieldset>
           </div>
+
+          {/* Three short fields side by side, so Links stays one row tall. */}
+          <fieldset className="links-row">
+            <legend>Links</legend>
+            <p className="hint">Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
+            <div className="link-fields">
+              {LINK_FIELDS.map(({ id, label, placeholder }) => (
+                <label key={id}>
+                  <span>{label}</span>
+                  <input
+                    type="url"
+                    placeholder={placeholder}
+                    value={getText(profile, id)}
+                    onChange={(e) => update(id, e.target.value)}
+                  />
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           {/* Languages and salary share a row so both start at the same height. */}
           <LanguagesSection languages={profile.languages ?? []} onChange={updateLanguages} />
