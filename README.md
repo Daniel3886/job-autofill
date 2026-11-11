@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/icons/icon128.png" alt="Job Autofill icon" width="96" height="96">
+</p>
+
 # Job Autofill
 
 A Chromium extension (Manifest V3) that fills job application forms with your saved profile when you click its icon. It works in Google Chrome and ungoogled Chromium.
