@@ -23,7 +23,7 @@ Not supported yet: location search dropdowns outside Traffit, drag-and-drop-only
 
 ## How it works
 
-![Saving a profile on the options page, then filling a job application form with one click](docs/demo.gif)
+![Saving a profile on the options page, then filling a job application form with one click](docs/demo-dark.gif)
 
 - **Adapters** identify fields. The first vendor adapter whose `detect()` matches runs, then the generic adapter handles everything it did not claim. To add an ATS, write `src/content/adapters/<vendor>.ts` and add it to `VENDOR_ADAPTERS`.
 - **Drivers** put values into controls. Values are set through the native setter, followed by `input` and `change` events, so React and Vue forms register them.
