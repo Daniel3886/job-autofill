@@ -23,18 +23,7 @@ Not supported yet: location search dropdowns outside Traffit, drag-and-drop-only
 
 ## How it works
 
-```
-Options page (React) ──save──▶ chrome.storage.local (src/shared/profileStore.ts)
-                                         ▲
-Icon click ──▶ service worker ──inject──▶ content script in the active tab
-               (src/background)               │
-                    ▲                         ├─ adapters/  which element is which field
-                    │ MAIN world calls        │    traffit.ts  (data-sid, Selectize selects)
-                    └──── (Selectize only) ───┤    generic.ts  (scoring matcher, any site)
-                                              ├─ choices/   profile answer ↔ option text
-                                              ├─ plan.ts    decide what to fill
-                                              └─ drivers/   text, select, radio
-```
+![Saving a profile on the options page, then filling a job application form with one click](docs/demo.gif)
 
 - **Adapters** identify fields. The first vendor adapter whose `detect()` matches runs, then the generic adapter handles everything it did not claim. To add an ATS, write `src/content/adapters/<vendor>.ts` and add it to `VENDOR_ADAPTERS`.
 - **Drivers** put values into controls. Values are set through the native setter, followed by `input` and `change` events, so React and Vue forms register them.
@@ -70,3 +59,7 @@ npm run build     # outputs dist/
 ```
 
 Load it: open `chrome://extensions`, turn on Developer mode, click "Load unpacked", and choose `dist/`. After a rebuild, click the reload button on the extension card.
+
+## License
+
+[MIT](LICENSE)
