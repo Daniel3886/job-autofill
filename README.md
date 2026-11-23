@@ -70,3 +70,7 @@ npm run build     # outputs dist/
 ```
 
 Load it: open `chrome://extensions`, turn on Developer mode, click "Load unpacked", and choose `dist/`. After a rebuild, click the reload button on the extension card.
+
+## License
+
+[MIT](LICENSE)
