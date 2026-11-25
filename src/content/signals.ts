@@ -38,9 +38,22 @@ export function questionText(el: HTMLSelectElement | HTMLElement): string {
   return normalize(findNearbyText(el));
 }
 
+const LABEL_NOISE = "input, select, textarea, option, button";
+
+/**
+ * A label's own words. A label that wraps its control also holds the control's text (a
+ * select's option list), which is part of the answer, not the question.
+ */
+export function ownLabelText(label: HTMLElement): string {
+  if (!label.querySelector(LABEL_NOISE)) return label.textContent ?? "";
+  const copy = label.cloneNode(true) as HTMLElement;
+  for (const noise of copy.querySelectorAll(LABEL_NOISE)) noise.remove();
+  return copy.textContent ?? "";
+}
+
 function labelText(el: HTMLElement): string {
   const labels = (el as HTMLInputElement).labels;
-  const texts = [...(labels ?? [])].map((l) => l.textContent ?? "");
+  const texts = [...(labels ?? [])].map(ownLabelText);
   const labelledBy = el.getAttribute("aria-labelledby");
   if (labelledBy) {
     for (const id of labelledBy.split(/\s+/)) {
@@ -76,7 +89,7 @@ export function cleanQuestion(text: string): string {
 }
 
 export function rawQuestionText(el: HTMLElement): string {
-  const labels = [...((el as HTMLInputElement).labels ?? [])].map((l) => l.textContent ?? "");
+  const labels = [...((el as HTMLInputElement).labels ?? [])].map(ownLabelText);
   const labelledBy = el.getAttribute("aria-labelledby");
   if (labelledBy) {
     for (const id of labelledBy.split(/\s+/)) labels.push(byIdNear(el, id)?.textContent ?? "");

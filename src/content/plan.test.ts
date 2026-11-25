@@ -366,6 +366,20 @@ describe("generic adapter", () => {
   });
 });
 
+describe("labels that wrap their control", () => {
+  it("reads the question without the option texts inside the label", async () => {
+    await fill(`
+      <label>Forma współpracy
+        <select id="c">
+          <option value="">Wybierz</option>
+          <option value="1">Umowa o pracę</option>
+          <option value="2">B2B (salary negotiable)</option>
+        </select>
+      </label>`);
+    expect($<HTMLSelectElement>("#c").value).toBe("2");
+  });
+});
+
 describe("full name", () => {
   it("fills a full-name box with the first and last name", async () => {
     await fill(`<label for="n">Imię i nazwisko *</label><input id="n">`);
