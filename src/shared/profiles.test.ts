@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Profile } from "./profile";
 import {
+  PROFILE_COUNTRY,
+  effectiveProfile,
   mergeProfile,
   nextProfileId,
   profileBadge,
@@ -66,15 +68,59 @@ describe("deleting profiles", () => {
 describe("shared and per-profile values", () => {
   const whole: Profile = {
     version: 1,
-    values: { firstName: "Daniel", email: "d@example.com", tickRequiredConsent: "yes", city: "Warszawa", workMode: ["remote"] },
+    values: {
+      firstName: "Daniel",
+      email: "d@example.com",
+      tickRequiredConsent: "yes",
+      linkedin: "https://www.linkedin.com/in/daniel",
+      country: "Polska",
+      city: "Warszawa",
+      workMode: ["remote"],
+    },
     languages: [{ language: "en", level: "C1" }],
     salaries: [{ amount: "15000", contract: "b2b", period: "month", basis: "net" }],
   };
 
-  it("keeps name, email, phone and settings shared, and the rest in the profile", () => {
+  it("shares name, contact, links, country, languages and settings, and keeps the rest in the profile", () => {
     const { global, own } = splitProfile(whole);
-    expect(global.values).toEqual({ firstName: "Daniel", email: "d@example.com", tickRequiredConsent: "yes" });
-    expect(own).toEqual({ values: { city: "Warszawa", workMode: ["remote"] }, languages: whole.languages, salaries: whole.salaries });
+    expect(global.values).toEqual({
+      firstName: "Daniel",
+      email: "d@example.com",
+      tickRequiredConsent: "yes",
+      linkedin: "https://www.linkedin.com/in/daniel",
+      country: "Polska",
+    });
+    expect(global.languages).toEqual(whole.languages);
+    expect(own).toEqual({ values: { city: "Warszawa", workMode: ["remote"] }, salaries: whole.salaries });
+  });
+
+  it("fills with a profile's own country, and with the default when the profile has none", () => {
+    const { global } = splitProfile(whole);
+    const de = { id: "de", name: "DE", values: { [PROFILE_COUNTRY]: "Deutschland" } };
+    const plain = { id: "p", name: "P", values: { [PROFILE_COUNTRY]: "" } };
+    expect(effectiveProfile(mergeProfile(global, de)).values.country).toBe("Deutschland");
+    expect(effectiveProfile(mergeProfile(global, plain)).values.country).toBe("Polska");
+    expect(effectiveProfile(mergeProfile(global, de)).values).not.toHaveProperty(PROFILE_COUNTRY);
+    // The options page sees both, so it can show the default next to the override.
+    expect(mergeProfile(global, de).values).toMatchObject({ country: "Polska", [PROFILE_COUNTRY]: "Deutschland" });
+  });
+
+  it("reads links, languages and the country a profile held before they were shared", () => {
+    const shared: Profile = { version: 1, values: { firstName: "Daniel" } };
+    const old = {
+      id: "a",
+      name: "A",
+      values: { city: "Kraków", github: "https://github.com/daniel", country: "Polska" },
+      languages: [{ language: "de", level: "B1" }],
+    };
+    const merged = mergeProfile(shared, old);
+    expect(merged.values).toMatchObject({ github: "https://github.com/daniel", country: "Polska" });
+    expect(merged.values).not.toHaveProperty(PROFILE_COUNTRY);
+    expect(merged.languages).toEqual(old.languages);
+
+    // Once a default country is shared, a different country the profile held becomes its own.
+    const withDefault = mergeProfile({ version: 1, values: { country: "Niemcy" } }, old);
+    expect(withDefault.values).toMatchObject({ country: "Niemcy", [PROFILE_COUNTRY]: "Polska" });
   });
 
   it("merges back to the same profile, with shared values winning over stale copies in a profile", () => {
@@ -85,6 +131,8 @@ describe("shared and per-profile values", () => {
       firstName: "Daniel",
       email: "d@example.com",
       tickRequiredConsent: "yes",
+      linkedin: "https://www.linkedin.com/in/daniel",
+      country: "Polska",
       city: "Kraków",
     });
   });

@@ -23,7 +23,7 @@ import {
   type SalaryExpectation,
 } from "../shared/profile";
 import { profileStore } from "../shared/profileStore";
-import { activeProfile, isGlobalKey, mergeProfile, splitProfile, type ProfilesState } from "../shared/profiles";
+import { PROFILE_COUNTRY, activeProfile, isGlobalKey, mergeProfile, splitProfile, type ProfilesState } from "../shared/profiles";
 import { HOURS_PER_MONTH, convertAmount, formatAmount, parseAmount } from "../shared/salary";
 
 interface ToastMessage {
@@ -156,7 +156,7 @@ export function App() {
       const keptAnswers = answers
         .map((a) => ({ ...a, question: a.question.replace(/\s+/g, " ").trim() }))
         .filter((a) => a.question !== "" && a.answer.trim() !== "");
-      await profileStore.saveGlobal({ ...profile, values });
+      await profileStore.saveGlobal({ ...profile, values, languages });
       await profileStore.saveProfile({ id: candidate.id, name: candidate.name, ...own });
       await profileStore.saveAnswers(keptAnswers);
       setAnswers(keptAnswers);
@@ -306,8 +306,9 @@ export function App() {
           </button>
         </div>
         <p className="hint">
-          Each profile has its own CV, location, preferences, links, languages and salary. Switch the one used for
-          filling from the extension icon's right-click menu, or with Alt+Shift+P.
+          Each profile has its own CV, city, region, preferences and salary, and can use its own country. Name,
+          contact details, links, languages and the default country are shared. Switch the profile used for filling
+          from the extension icon's right-click menu, or with Alt+Shift+P.
         </p>
       </section>
       <form onSubmit={onSubmit}>
@@ -318,7 +319,7 @@ export function App() {
               <p className="hint">Shared by all profiles.</p>
               {TEXT_FIELDS.filter(({ id }) => isGlobalKey(id)).map(({ id, label, inputType }) => (
                 <label key={id}>
-                  <span>{label}</span>
+                  <span>{id === "country" ? "Country (default)" : label}</span>
                   <input type={inputType} value={getText(profile, id)} onChange={(e) => update(id, e.target.value)} />
                 </label>
               ))}
@@ -332,6 +333,16 @@ export function App() {
                   <input type={inputType} value={getText(profile, id)} onChange={(e) => update(id, e.target.value)} />
                 </label>
               ))}
+              <label>
+                <span>Country for this profile</span>
+                <input
+                  type="text"
+                  placeholder={getText(profile, "country") ? `Default: ${getText(profile, "country")}` : "Uses the default"}
+                  value={getText(profile, PROFILE_COUNTRY)}
+                  onChange={(e) => update(PROFILE_COUNTRY, e.target.value)}
+                />
+              </label>
+              <p className="hint">Leave empty to use the default country.</p>
             </fieldset>
           </div>
 
@@ -367,7 +378,7 @@ export function App() {
           {/* Three short fields side by side, so Links stays one row tall. */}
           <fieldset className="links-row">
             <legend>Links</legend>
-            <p className="hint">Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
+            <p className="hint">Shared by all profiles. Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
             <div className="link-fields">
               {LINK_FIELDS.map(({ id, label, placeholder }) => (
                 <label key={id}>
@@ -448,6 +459,7 @@ function LanguagesSection({
   return (
     <fieldset>
       <legend>Languages</legend>
+      <p className="hint">Shared by all profiles.</p>
       <p className="hint">Used when a form asks for your level in a specific language.</p>
       {languages.length === 0 && <p className="empty">No languages added yet.</p>}
       {languages.map((row, index) => (

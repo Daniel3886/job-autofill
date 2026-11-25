@@ -57,7 +57,7 @@ const BEFORE_PROFILES: Profile = {
 };
 
 describe("moving to candidate profiles", () => {
-  it("puts everything but name, email, phone and settings into a Default profile, CV included", async () => {
+  it("puts the CV, location, preferences and salary into a Default profile and keeps the rest shared", async () => {
     store.profile = BEFORE_PROFILES;
     store.cv = cv("old.pdf");
 
@@ -68,8 +68,7 @@ describe("moving to candidate profiles", () => {
       {
         id: "default",
         name: "Default",
-        values: { city: "Warszawa", country: "Polska", workMode: ["remote"], linkedin: "https://www.linkedin.com/in/daniel" },
-        languages: BEFORE_PROFILES.languages,
+        values: { city: "Warszawa", workMode: ["remote"] },
         salaries: BEFORE_PROFILES.salaries,
       },
     ]);
@@ -107,7 +106,11 @@ describe("moving to candidate profiles", () => {
       email: "daniel@example.com",
       phone: "+48 600 000 000",
       tickRequiredConsent: "yes",
+      country: "Polska",
+      linkedin: "https://www.linkedin.com/in/daniel",
     });
+    expect((store.profile as Profile).languages).toEqual(BEFORE_PROFILES.languages);
+    expect((store.profile as Profile).salaries).toBeUndefined();
   });
 });
 
@@ -118,7 +121,7 @@ describe("the active profile", () => {
     await profileStore.getProfiles();
   });
 
-  it("combines the shared name, email and phone with the active profile's own values", async () => {
+  it("combines the shared name, contact, links, country and languages with the active profile's own values", async () => {
     const pl = await profileStore.createProfile("Frontend – PL");
     await profileStore.saveProfile({ ...pl, values: { city: "Kraków", firstName: "Stale copy" } });
     await profileStore.setActive(pl.id);
@@ -130,9 +133,22 @@ describe("the active profile", () => {
       email: "daniel@example.com",
       phone: "+48 600 000 000",
       tickRequiredConsent: "yes",
+      country: "Polska",
+      linkedin: "https://www.linkedin.com/in/daniel",
       city: "Kraków",
     });
-    expect(active.languages).toBeUndefined();
+    expect(active.languages).toEqual(BEFORE_PROFILES.languages);
+    expect(active.salaries).toBeUndefined();
+  });
+
+  it("fills with the active profile's own country, and the shared one for a profile without", async () => {
+    const de = await profileStore.createProfile("Berlin");
+    await profileStore.saveProfile({ ...de, values: { profileCountry: "Deutschland" } });
+    await profileStore.setActive(de.id);
+    expect((await profileStore.getActive()).values.country).toBe("Deutschland");
+
+    await profileStore.setActive("default");
+    expect((await profileStore.getActive()).values.country).toBe("Polska");
   });
 
   it("gives a fill the city and the CV of the profile that is switched to", async () => {

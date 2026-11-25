@@ -42,14 +42,15 @@ A choice is filled only when exactly one option on the page matches your answer.
 
 Apply with more than one CV, for example "Backend – EN" and "Frontend – PL":
 
-- **Shared by all profiles:** first name, last name, email, phone, the consent setting and your saved answers.
-- **Each profile's own:** CV, location (city, province, country), preferences (availability, contract types, work mode), links, languages and salary.
+- **Shared by all profiles:** first name, last name, email, phone, links, languages, the default country, the consent setting and your saved answers.
+- **Each profile's own:** CV, city, province, preferences (availability, contract types, work mode) and salary.
+- **Country:** the default country applies to every profile. A profile can set its own under **Country for this profile**; leave it empty to use the default.
 
 On the profile page, the bar at the top picks the profile you are editing and offers **New**, **Duplicate** (values and CV included), **Rename**, **Delete** and **Use for filling**. The last profile cannot be deleted. If you switch to another profile with unsaved changes, the page asks to save them first and stays put if you cancel.
 
 One profile is used for filling at a time. Switch it from the extension icon's right-click menu (**Fill with profile**), or press **Alt+Shift+P** (**Option+Shift+P** on a Mac) to move to the next one. The icon flashes the first two letters of the new profile, and its tooltip names the profile in use.
 
-Your data from before profiles existed becomes a profile called "Default", CV included.
+Your data from before profiles existed becomes a profile called "Default", CV included. Links, languages or a country saved in a profile before they were shared keep working, and move to the shared part the next time you save the profile page.
 
 ## Saved answers
 

@@ -4,6 +4,7 @@ import type { StoredFile } from "./files";
 import {
   DEFAULT_PROFILE_NAME,
   activeProfile,
+  effectiveProfile,
   isGlobalKey,
   mergeProfile,
   newProfileId,
@@ -14,7 +15,7 @@ import {
 } from "./profiles";
 import { normalizeQuestion } from "./text";
 
-/** The shared part: name, email, phone and behaviour settings. */
+/** The shared part: name, contact details, links, country, languages and behaviour settings. */
 const PROFILE_KEY = "profile";
 /** Candidate profiles and which one fills. */
 const PROFILES_KEY = "profiles";
@@ -63,7 +64,12 @@ export const profileStore = {
   /** The shared part only. Use getActive() for what a fill needs. */
   async getGlobal(): Promise<Profile> {
     const whole = await readGlobal();
-    return { ...whole, values: Object.fromEntries(Object.entries(whole.values).filter(([k]) => isGlobalKey(k))) };
+    const shared: Profile = {
+      version: 1,
+      values: Object.fromEntries(Object.entries(whole.values).filter(([k]) => isGlobalKey(k))),
+    };
+    if (whole.languages) shared.languages = whole.languages;
+    return shared;
   },
 
   /** Saves the shared part; any other value in `profile` is dropped, since it belongs to a candidate profile. */
@@ -82,7 +88,7 @@ export const profileStore = {
   /** The shared values plus the active candidate profile, in the shape the fill code reads. */
   async getActive(): Promise<Profile> {
     const [global, state] = await Promise.all([readGlobal(), readProfiles()]);
-    return mergeProfile(global, activeProfile(state));
+    return effectiveProfile(mergeProfile(global, activeProfile(state)));
   },
 
   async saveProfile(profile: CandidateProfile): Promise<void> {
