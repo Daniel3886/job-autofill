@@ -1,3 +1,4 @@
+import { byIdNear, queryAllDeep } from "../dom";
 import { findNearbyText } from "../signals";
 import { normalize } from "../text";
 import { isHiddenByMarkup, isHoneypot } from "../visibility";
@@ -10,7 +11,7 @@ export interface RadioGroup {
 
 export function collectRadioGroups(root: ParentNode, exclude: Set<Element> = new Set()): RadioGroup[] {
   const byName = new Map<string, HTMLInputElement[]>();
-  for (const r of root.querySelectorAll<HTMLInputElement>('input[type="radio"]')) {
+  for (const r of queryAllDeep<HTMLInputElement>(root, 'input[type="radio"]')) {
     // Styled radios hide the native input, so only markup and honeypot names rule one out.
     if (exclude.has(r) || !r.name || r.disabled || isHoneypot(r) || isHiddenByMarkup(r)) continue;
     const list = byName.get(r.name) ?? [];
@@ -52,7 +53,7 @@ function groupQuestion(radios: HTMLInputElement[]): string {
     const aria = group.getAttribute("aria-label");
     if (aria) return normalize(aria);
     const by = group.getAttribute("aria-labelledby");
-    if (by) return normalize(container.ownerDocument.getElementById(by)?.textContent ?? "");
+    if (by) return normalize(byIdNear(container, by)?.textContent ?? "");
   }
 
   return normalize(findNearbyText(container));

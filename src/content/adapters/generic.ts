@@ -1,5 +1,6 @@
 import { classifyQuestion } from "../choices/choiceRules";
 import { classifyPlaceQuestion } from "../choices/places";
+import { queryAllDeep } from "../dom";
 import { collectRadioGroups } from "../drivers/radio";
 import { isSelectized } from "../drivers/select";
 import { collectTextInputs } from "../drivers/text";
@@ -27,7 +28,7 @@ export const genericAdapter: VendorAdapter = {
       targets.push({ kind: "text", fieldId: m.fieldId, question: m.question, element: m.element });
     }
 
-    for (const select of doc.querySelectorAll("select")) {
+    for (const select of queryAllDeep<HTMLSelectElement>(doc, "select")) {
       if (ctx.claimed.has(select) || select.disabled) continue;
       if (!isPersonFacing(select, ctx.checkVisibility && !isSelectized(select))) continue;
       const question = questionText(select);
@@ -45,7 +46,7 @@ export const genericAdapter: VendorAdapter = {
     }
 
     if (!ctx.claimedFields.has("cv")) {
-      for (const input of doc.querySelectorAll<HTMLInputElement>('input[type="file"]')) {
+      for (const input of queryAllDeep<HTMLInputElement>(doc, 'input[type="file"]')) {
         if (ctx.claimed.has(input) || input.disabled || (input.files?.length ?? 0) > 0) continue;
         // Upload inputs are usually styled away behind a button, so only markup can hide them.
         if (isHoneypot(input) || isHiddenByMarkup(input)) continue;

@@ -1,3 +1,4 @@
+import { queryAllDeep } from "../dom";
 import type { TextLike } from "../signals";
 import { isPersonFacing } from "../visibility";
 
@@ -20,7 +21,7 @@ export function collectTextInputs(
   checkVisibility = true,
   exclude: Set<Element> = new Set(),
 ): TextLike[] {
-  return [...root.querySelectorAll<TextLike>("input, textarea")].filter(
+  return queryAllDeep<TextLike>(root, "input, textarea").filter(
     (el) => !exclude.has(el) && !el.closest(".selectize-control") && isFillableText(el, checkVisibility),
   );
 }
@@ -30,7 +31,7 @@ export function setTextValue(el: TextLike, value: string): void {
   const setter = Object.getOwnPropertyDescriptor(proto, "value")!.set!;
   el.focus();
   setter.call(el, value);
-  el.dispatchEvent(new Event("input", { bubbles: true }));
-  el.dispatchEvent(new Event("change", { bubbles: true }));
+  el.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
   el.blur();
 }

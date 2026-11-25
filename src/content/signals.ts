@@ -1,3 +1,4 @@
+import { byIdNear } from "./dom";
 import { normalize } from "./text";
 
 export type TextLike = HTMLInputElement | HTMLTextAreaElement;
@@ -43,7 +44,7 @@ function labelText(el: HTMLElement): string {
   const labelledBy = el.getAttribute("aria-labelledby");
   if (labelledBy) {
     for (const id of labelledBy.split(/\s+/)) {
-      texts.push(el.ownerDocument.getElementById(id)?.textContent ?? "");
+      texts.push(byIdNear(el, id)?.textContent ?? "");
     }
   }
   return normalize(texts.join(" "));
@@ -78,7 +79,7 @@ export function rawQuestionText(el: HTMLElement): string {
   const labels = [...((el as HTMLInputElement).labels ?? [])].map((l) => l.textContent ?? "");
   const labelledBy = el.getAttribute("aria-labelledby");
   if (labelledBy) {
-    for (const id of labelledBy.split(/\s+/)) labels.push(el.ownerDocument.getElementById(id)?.textContent ?? "");
+    for (const id of labelledBy.split(/\s+/)) labels.push(byIdNear(el, id)?.textContent ?? "");
   }
   const text =
     labels.join(" ").trim() ||

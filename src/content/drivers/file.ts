@@ -2,8 +2,8 @@ export function setFileInput(el: HTMLInputElement, file: File): void {
   const dt = new DataTransfer();
   dt.items.add(file);
   el.files = dt.files;
-  el.dispatchEvent(new Event("input", { bubbles: true }));
-  el.dispatchEvent(new Event("change", { bubbles: true }));
+  el.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
 }
 
 export function acceptsFile(el: HTMLInputElement, name: string, type: string): boolean {
