@@ -142,6 +142,14 @@ export function getText(profile: Profile, id: string): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
+/** A text value the form asks for, including ones built from the profile ("Daniel Kowalski"). */
+export function getFieldText(profile: Profile, id: string): string {
+  if (id !== "fullName") return getText(profile, id);
+  const first = getText(profile, "firstName");
+  const last = getText(profile, "lastName");
+  return first && last ? `${first} ${last}` : "";
+}
+
 export function getList(profile: Profile, id: string): string[] {
   const v = profile.values[id];
   if (Array.isArray(v)) return v;

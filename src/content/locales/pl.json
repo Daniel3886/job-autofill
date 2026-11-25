@@ -1,5 +1,6 @@
 {
   "fields": {
+    "fullName": { "labels": ["imię i nazwisko", "imię oraz nazwisko", "imiona i nazwisko"] },
     "firstName": { "labels": ["imię"] },
     "lastName": { "labels": ["nazwisko"] },
     "email": { "labels": ["adres email", "adres e-mail"] },

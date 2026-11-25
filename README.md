@@ -11,7 +11,7 @@
 
 ## What it fills
 
-- **Text fields and textareas:** first name, last name, email, phone, city, province (województwo), country, and salary.
+- **Text fields and textareas:** first name, last name, email, phone, city, province (województwo), country, and salary. A single box for the whole name (Full name, Name, Imię i nazwisko) gets your first and last name, and only when both are saved.
 - **Choice questions** (native selects, Selectize dropdowns, radio groups): English level, availability, contract types, work mode, and salary buckets.
 - **Province and country dropdowns** labelled Województwo or Kraj (or Province, Country): the option with your saved name is picked. A "woj." or "województwo" prefix on the option is ignored, so "Mazowieckie" matches "woj. mazowieckie".
 - **Traffit city dropdown:** the "Lokalizacja (Miasto)" search box. The extension searches for your saved city and picks the result whose name matches. English city names such as Warsaw, and names typed without ł such as Wroclaw, are looked up by their Polish spelling, and anything after a comma or bracket ("Warszawa, Polska") is ignored. The country dropdown is left as the form set it. When the city is not filled, the page console says why.

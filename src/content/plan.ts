@@ -1,4 +1,4 @@
-import { getLanguages, getList, getText, type Profile } from "../shared/profile";
+import { getFieldText, getLanguages, getList, getText, type Profile } from "../shared/profile";
 import { storedToFile, type StoredFile } from "../shared/files";
 import { TARGET_ATTR, type SelectizeInfo, type SelectizeSetItem } from "../shared/messages";
 import type { FieldTarget } from "./adapters/types";
@@ -46,7 +46,7 @@ export async function planFills(
     if (t.kind === "answer") {
       answers.push(t);
     } else if (t.kind === "text") {
-      const value = t.fieldId === "salary" ? salaryText(t.question, profile) : getText(profile, t.fieldId);
+      const value = t.fieldId === "salary" ? salaryText(t.question, profile) : getFieldText(profile, t.fieldId);
       if (value) actions.push({ kind: "text", element: t.element, value });
     } else if (t.kind === "select") {
       if (isSelectized(t.element)) {

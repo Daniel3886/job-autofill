@@ -1,5 +1,6 @@
 {
   "fields": {
+    "fullName": { "labels": ["full name", "first and last name", "first name and last name", "name and surname"], "attributes": ["fullname"], "exact": ["name", "your name"] },
     "firstName": { "labels": ["first name", "given name", "forename"], "attributes": ["fname", "firstname", "givenname"] },
     "lastName": { "labels": ["last name", "surname", "family name"], "attributes": ["lname", "lastname", "familyname"] },
     "email": { "labels": ["email", "e-mail", "mail"] },

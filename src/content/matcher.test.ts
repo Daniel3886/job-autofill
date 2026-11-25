@@ -104,6 +104,25 @@ describe("matchInputs", () => {
   });
 });
 
+describe("full name fields", () => {
+  it("matches one box for the whole name in English and Polish", () => {
+    expect(matchedIds(`<label for="a">Full name *</label><input id="a">`)).toEqual({ a: "fullName" });
+    expect(matchedIds(`<label for="b">Imię i nazwisko</label><input id="b">`)).toEqual({ b: "fullName" });
+    expect(matchedIds(`<label for="c">Name</label><input id="c">`)).toEqual({ c: "fullName" });
+    expect(matchedIds(`<input id="d" autocomplete="name">`)).toEqual({ d: "fullName" });
+  });
+
+  it("keeps separate first and last name boxes, and other names, as they were", () => {
+    expect(
+      matchedIds(`
+        <label for="f">First name</label><input id="f">
+        <label for="l">Last name</label><input id="l">
+        <label for="co">Company name</label><input id="co">
+        <label for="ref">Name of the person who referred you</label><input id="ref">`),
+    ).toEqual({ f: "firstName", l: "lastName" });
+  });
+});
+
 describe("profile links", () => {
   it("matches LinkedIn, GitHub and portfolio fields by label or name", () => {
     expect(

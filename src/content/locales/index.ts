@@ -3,7 +3,7 @@ import en from "./en.json";
 import pl from "./pl.json";
 
 export interface Locale {
-  fields?: Record<string, { labels?: string[]; attributes?: string[] }>;
+  fields?: Record<string, { labels?: string[]; attributes?: string[]; exact?: string[] }>;
   questions?: Record<string, string[]>;
   options?: Record<string, Record<string, string[][]>>;
   languages?: Record<string, string[]>;

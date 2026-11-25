@@ -366,6 +366,21 @@ describe("generic adapter", () => {
   });
 });
 
+describe("full name", () => {
+  it("fills a full-name box with the first and last name", async () => {
+    await fill(`<label for="n">Imię i nazwisko *</label><input id="n">`);
+    expect($<HTMLInputElement>("#n").value).toBe("Daniel Kowalski");
+  });
+
+  it("leaves a full-name box empty when the profile has only one of the two names", async () => {
+    await fill(`<label for="n">Full name</label><input id="n">`, {
+      ...PROFILE,
+      values: { ...PROFILE.values, lastName: "" },
+    });
+    expect($<HTMLInputElement>("#n").value).toBe("");
+  });
+});
+
 describe("saved answers", () => {
   const answers = [
     { question: "Czy znasz Dockera i OpenShift?", answer: "tak", savedAt: "" },
