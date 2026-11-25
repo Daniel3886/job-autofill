@@ -380,6 +380,27 @@ describe("labels that wrap their control", () => {
   });
 });
 
+describe("masked inputs", () => {
+  it("fills a phone box that shows only its mask or its dialling code", async () => {
+    await fill(`
+      <label for="p">Telefon</label><input id="p" type="tel" value="+48 ___ ___ ___">`);
+    expect($<HTMLInputElement>("#p").value).toBe("123456789");
+  });
+
+  it("fills a box holding only mask blanks", async () => {
+    await fill(`<label for="p">Phone</label><input id="p" value="(___) ___-____">`);
+    expect($<HTMLInputElement>("#p").value).toBe("123456789");
+  });
+
+  it("leaves a phone number someone typed, even a partial one", async () => {
+    await fill(`
+      <label for="a">Telefon</label><input id="a" type="tel" value="+48 600 ___ ___">
+      <label for="b">Email</label><input id="b" value="  ">`);
+    expect($<HTMLInputElement>("#a").value).toBe("+48 600 ___ ___");
+    expect($<HTMLInputElement>("#b").value).toBe("  ");
+  });
+});
+
 describe("full name", () => {
   it("fills a full-name box with the first and last name", async () => {
     await fill(`<label for="n">Imię i nazwisko *</label><input id="n">`);

@@ -11,8 +11,28 @@ export function isTextLike(el: unknown): el is TextLike {
   return FILLABLE_TYPES.has(type) && !el.disabled && !el.readOnly;
 }
 
+/** Only an input mask's blanks: "(___) ___-____", "__.__.____". */
+const MASK_ONLY = /^[\s_\-()./#*]*$/;
+/** A phone mask that shows just its fixed dialling code: "+48 ", "+48 ___ ___ ___". */
+const DIAL_CODE_ONLY = /^\s*\+\d{1,3}[\s_\-()]*$/;
+
+function isPhoneBox(el: TextLike): boolean {
+  if (el.getAttribute("type") === "tel") return true;
+  return /phone|tel|mobile|telefon/i.test(`${el.getAttribute("name") ?? ""} ${el.id}`);
+}
+
+/**
+ * Does the input hold something a person typed? A masked input shows its blanks (and a phone
+ * mask its dialling code) before anything is typed; that is not a value.
+ */
+export function hasTypedValue(el: TextLike): boolean {
+  const value = el.value;
+  if (value === "" || (MASK_ONLY.test(value) && /[_#*]/.test(value))) return false;
+  return !(isPhoneBox(el) && DIAL_CODE_ONLY.test(value));
+}
+
 export function isFillableText(el: TextLike, checkVisibility: boolean): boolean {
-  if (!isTextLike(el) || el.value !== "") return false;
+  if (!isTextLike(el) || hasTypedValue(el)) return false;
   return isPersonFacing(el, checkVisibility);
 }
 
