@@ -1,5 +1,6 @@
 import { classifyQuestion } from "../choices/choiceRules";
 import { classifyPlaceQuestion } from "../choices/places";
+import { collectConsentBoxes } from "../consent";
 import { queryAllDeep } from "../dom";
 import { collectRadioGroups } from "../drivers/radio";
 import { isSelectized } from "../drivers/select";
@@ -57,6 +58,8 @@ export const genericAdapter: VendorAdapter = {
         targets.push({ kind: "radio", fieldId, question: group.question, radios: group.radios });
       }
     }
+
+    for (const box of collectConsentBoxes(doc, ctx.claimed)) targets.push({ kind: "consent", element: box });
 
     if (!ctx.claimedFields.has("cv")) {
       for (const input of queryAllDeep<HTMLInputElement>(doc, 'input[type="file"]')) {

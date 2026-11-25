@@ -81,6 +81,11 @@
     "lowest": ["none", "no knowledge", "beginner", "basic", "elementary"],
     "highest": ["native", "mother tongue", "bilingual", "fluent", "proficient", "excellent"]
   },
+  "consent": {
+    "dataProcessing": ["processing of my personal data", "process my personal data", "processing my personal data", "processing of personal data", "personal data processing", "privacy policy", "privacy notice", "gdpr"],
+    "required": ["required", "mandatory"],
+    "never": ["future recruitment", "future recruitments", "future opportunities", "future positions", "future roles", "other positions", "talent pool", "talent community", "talent network", "newsletter", "marketing", "commercial", "job alert", "job alerts", "stay in touch", "partners", "third parties"]
+  },
   "startDate": ["start date", "earliest start date", "available from", "availability date", "date available", "when can you start"],
   "cv": {
     "keywords": ["cv", "resume", "curriculum vitae"],

@@ -133,6 +133,9 @@ export const CHOICE_FIELDS: ChoiceField[] = [
   },
 ];
 
+/** Profile value "yes" lets a fill tick required data-processing consents. Off unless the user turns it on. */
+export const CONSENT_SETTING = "tickRequiredConsent";
+
 export function emptyProfile(): Profile {
   return { version: 1, values: {} };
 }

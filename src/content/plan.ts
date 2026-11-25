@@ -1,4 +1,4 @@
-import { getFieldText, getLanguages, getList, getText, type Profile } from "../shared/profile";
+import { CONSENT_SETTING, getFieldText, getLanguages, getList, getText, type Profile } from "../shared/profile";
 import { storedToFile, type StoredFile } from "../shared/files";
 import { TARGET_ATTR, type SelectizeInfo, type SelectizeSetItem } from "../shared/messages";
 import type { FieldTarget } from "./adapters/types";
@@ -19,6 +19,7 @@ export type FillAction =
   | { kind: "select"; element: HTMLSelectElement; values: string[] }
   | { kind: "selectize"; target: string; values: string[] }
   | { kind: "radio"; element: HTMLInputElement }
+  | { kind: "check"; element: HTMLInputElement }
   | { kind: "file"; element: HTMLInputElement; file: StoredFile };
 
 export interface MainWorldBridge {
@@ -60,6 +61,8 @@ export async function planFills(
       if (values) actions.push({ kind: "select", element: t.element, values });
     } else if (t.kind === "location") {
       continue;
+    } else if (t.kind === "consent") {
+      if (getText(profile, CONSENT_SETTING) === "yes") actions.push({ kind: "check", element: t.element });
     } else if (t.kind === "date") {
       const date = startDate(getText(profile, "availability"), today);
       if (date) actions.push({ kind: "text", element: t.element, value: formatDate(date, t.format) });
@@ -105,7 +108,7 @@ export async function executeActions(actions: FillAction[], bridge: MainWorldBri
   for (const a of actions) {
     if (a.kind === "text") setTextValue(a.element, a.value);
     else if (a.kind === "select") setNativeSelect(a.element, a.values);
-    else if (a.kind === "radio") checkRadio(a.element);
+    else if (a.kind === "radio" || a.kind === "check") checkRadio(a.element);
     else if (a.kind === "file") setFileInput(a.element, storedToFile(a.file));
     else {
       selectizeItems.push({ target: a.target, values: a.values });
@@ -117,7 +120,7 @@ export async function executeActions(actions: FillAction[], bridge: MainWorldBri
   return filled;
 }
 
-function choose(t: Exclude<FieldTarget, { kind: "answer" | "date" }>, options: ChoiceOption[], multiple: boolean, profile: Profile): string[] | null {
+function choose(t: Exclude<FieldTarget, { kind: "answer" | "date" | "consent" }>, options: ChoiceOption[], multiple: boolean, profile: Profile): string[] | null {
   if (t.fieldId === "salary") {
     const amount = salaryAmount(t.question, profile);
     const option = amount === null ? null : matchSalaryOption(amount, options);

@@ -77,6 +77,11 @@
     "lowest": ["brak", "brak znajomości", "początkujący", "podstawowy", "podstawowa"],
     "highest": ["ojczysty", "natywny", "biegły", "biegła"]
   },
+  "consent": {
+    "dataProcessing": ["przetwarzanie moich danych osobowych", "przetwarzanie danych osobowych", "przetwarzanie moich danych", "polityką prywatności", "polityka prywatności", "klauzulą informacyjną", "klauzula informacyjna", "rodo"],
+    "required": ["wymagane", "wymagana", "obowiązkowe", "obowiązkowa"],
+    "never": ["przyszłych rekrutacji", "przyszłych rekrutacjach", "przyszłych procesach rekrutacyjnych", "przyszłych procesów rekrutacyjnych", "innych rekrutacji", "innych stanowisk", "newsletter", "marketing", "marketingowych", "handlowych", "handlowej", "alertów", "powiadomień o ofertach", "partnerów", "podmiotów trzecich"]
+  },
   "startDate": ["data rozpoczęcia", "data rozpoczęcia pracy", "dostępny od", "dostępna od", "dostępność od", "data dostępności", "od kiedy możesz zacząć"],
   "cv": {
     "keywords": ["życiorys"],

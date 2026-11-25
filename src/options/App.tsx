@@ -3,6 +3,7 @@ import type { SavedAnswer } from "../shared/answers";
 import { CV_ACCEPT, MAX_CV_BYTES, fileToStored, formatSize, type StoredFile } from "../shared/files";
 import {
   CHOICE_FIELDS,
+  CONSENT_SETTING,
   LANGUAGES,
   LANGUAGE_LEVELS,
   LINK_FIELDS,
@@ -159,6 +160,18 @@ export function App() {
                   onChange={(v) => update(field.id, v)}
                 />
               ))}
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={getText(profile, CONSENT_SETTING) === "yes"}
+                  onChange={(e) => update(CONSENT_SETTING, e.target.checked ? "yes" : "")}
+                />
+                Tick required consent to processing my data for the job I apply to
+              </label>
+              <p className="hint">
+                Only a box the form marks as required. Boxes for future recruitment, talent pools, marketing or
+                newsletters are never ticked.
+              </p>
             </fieldset>
           </div>
 

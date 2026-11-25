@@ -8,6 +8,7 @@ export type FieldTarget =
   | { kind: "file"; fieldId: "cv"; question: string; element: HTMLInputElement }
   | { kind: "location"; fieldId: "city"; question: string; element: HTMLSelectElement }
   | { kind: "date"; question: string; element: HTMLInputElement; format: string }
+  | { kind: "consent"; element: HTMLInputElement }
   | { kind: "answer"; element: TextLike; value: string };
 
 export interface CollectContext {
