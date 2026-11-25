@@ -11,7 +11,7 @@ const MAX_CONSENT_TEXT = 1500;
 
 /** The text a checkbox stands for: its label, or the row it sits in. */
 function consentText(box: HTMLInputElement): string {
-  const labels = [...(box.labels ?? [])].map(ownLabelText).join(" ").trim();
+  const labels = [...(box.labels ?? [])].map((l) => ownLabelText(l, box)).join(" ").trim();
   if (labels) return labels;
   const aria = box.getAttribute("aria-label")?.trim();
   if (aria) return aria;

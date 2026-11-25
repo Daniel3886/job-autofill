@@ -42,9 +42,17 @@ const LABEL_NOISE = "input, select, textarea, option, button";
 
 /**
  * A label's own words. A label that wraps its control also holds the control's text (a
- * select's option list), which is part of the answer, not the question.
+ * select's option list, an autocomplete's "No results" and "Loading" messages), which is not
+ * the question. When the label wraps `control`, the question is the text before it.
  */
-export function ownLabelText(label: HTMLElement): string {
+export function ownLabelText(label: HTMLElement, control?: Element): string {
+  if (control && control !== label && label.contains(control)) {
+    const range = label.ownerDocument.createRange();
+    range.setStart(label, 0);
+    range.setEndBefore(control);
+    const before = range.toString();
+    if (before.trim()) return before;
+  }
   if (!label.querySelector(LABEL_NOISE)) return label.textContent ?? "";
   const copy = label.cloneNode(true) as HTMLElement;
   for (const noise of copy.querySelectorAll(LABEL_NOISE)) noise.remove();
@@ -53,7 +61,7 @@ export function ownLabelText(label: HTMLElement): string {
 
 function labelText(el: HTMLElement): string {
   const labels = (el as HTMLInputElement).labels;
-  const texts = [...(labels ?? [])].map(ownLabelText);
+  const texts = [...(labels ?? [])].map((l) => ownLabelText(l, el));
   const labelledBy = el.getAttribute("aria-labelledby");
   if (labelledBy) {
     for (const id of labelledBy.split(/\s+/)) {
@@ -85,11 +93,11 @@ export function findNearbyText(el: HTMLElement): string {
 }
 
 export function cleanQuestion(text: string): string {
-  return text.replace(/\s+/g, " ").replace(/[\s*:]+$/, "").trim();
+  return text.replace(/\s+/g, " ").replace(/[\s*✱:]+$/, "").trim();
 }
 
 export function rawQuestionText(el: HTMLElement): string {
-  const labels = [...((el as HTMLInputElement).labels ?? [])].map(ownLabelText);
+  const labels = [...((el as HTMLInputElement).labels ?? [])].map((l) => ownLabelText(l, el));
   const labelledBy = el.getAttribute("aria-labelledby");
   if (labelledBy) {
     for (const id of labelledBy.split(/\s+/)) labels.push(byIdNear(el, id)?.textContent ?? "");

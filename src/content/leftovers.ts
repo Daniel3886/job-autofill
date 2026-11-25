@@ -13,7 +13,7 @@ export interface Leftover {
 
 const MAX_QUESTION = 120;
 const OWN_HOST = '[id^="job-autofill"]';
-const REQUIRED_MARK = /\*\s*:?\s*$|^\s*\*/;
+const REQUIRED_MARK = /[*✱]\s*:?\s*$|^\s*[*✱]/;
 
 /** Inside this extension's own panels (picker, report), also across shadow roots. */
 function isOwn(el: Element): boolean {
@@ -38,7 +38,7 @@ function markedRequired(el: HTMLElement, raw: string): boolean {
 
 /** The question as the page shows it, keeping the "*" that cleanQuestion drops. */
 function rawLabel(el: HTMLElement): string {
-  const labels = [...((el as HTMLInputElement).labels ?? [])].map(ownLabelText).join(" ").trim();
+  const labels = [...((el as HTMLInputElement).labels ?? [])].map((l) => ownLabelText(l, el)).join(" ").trim();
   return (
     labels ||
     el.getAttribute("aria-label")?.trim() ||
@@ -80,7 +80,7 @@ function radioLeftovers(root: ParentNode): Leftover[] {
 }
 
 function checkboxText(box: HTMLInputElement): string {
-  const labels = [...(box.labels ?? [])].map(ownLabelText).join(" ").trim();
+  const labels = [...(box.labels ?? [])].map((l) => ownLabelText(l, box)).join(" ").trim();
   if (labels) return labels;
   const row = box.parentElement;
   if (!row || row.querySelectorAll('input[type="checkbox"]').length > 1) return "";

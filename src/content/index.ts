@@ -4,6 +4,7 @@ import { collectTargets } from "./adapters";
 import { fillComboboxes } from "./comboboxes";
 import { findLeftovers } from "./leftovers";
 import { fillLocations } from "./location";
+import { fillSearchBoxes } from "./searchBoxes";
 import { executeActions, planFills, type FileSource, type MainWorldBridge } from "./plan";
 import { showReport } from "./report";
 
@@ -39,7 +40,11 @@ async function run() {
     console.warn("Job Autofill: dropdown fill failed", err);
     return 0;
   });
-  const filled = located + executed + picked;
+  const searched = await fillSearchBoxes(targets, profile).catch((err) => {
+    console.warn("Job Autofill: search box fill failed", err);
+    return 0;
+  });
+  const filled = located + executed + picked + searched;
 
   try {
     showReport(findLeftovers(document, true));

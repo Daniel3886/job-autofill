@@ -1,3 +1,4 @@
+import { fillSearchBox, searchBoxSpec } from "../content/drivers/searchBox";
 import { isTextLike, setTextValue } from "../content/drivers/text";
 import { rawQuestionText, type TextLike } from "../content/signals";
 
@@ -164,10 +165,20 @@ export function startPicker(doc: Document, deps: PickerDeps): () => void {
       } catch {
         return showError("Could not save the answer. Try again.");
       }
-      setTextValue(el, a);
       panel?.remove();
       panel = null;
-      banner.textContent = "Saved. Autofill will fill this question from now on.";
+      const spec = searchBoxSpec(el);
+      if (spec && el instanceof HTMLInputElement) {
+        banner.textContent = `Saved. Searching for "${a}"…`;
+        const outcome = await fillSearchBox(el, spec, a);
+        banner.textContent =
+          outcome === "filled"
+            ? "Saved and picked from the results. Autofill will fill this question from now on."
+            : `Saved, but ${outcome}. Pick the result yourself.`;
+      } else {
+        setTextValue(el, a);
+        banner.textContent = "Saved. Autofill will fill this question from now on.";
+      }
       setTimeout(stop, 1500);
     });
     (answer.value ? question : answer).focus();

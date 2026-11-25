@@ -81,7 +81,7 @@ function fire(el: HTMLElement, type: string, init: MouseEventInit = {}): void {
   el.dispatchEvent(new Ctor(type, opts));
 }
 
-function press(el: HTMLElement): void {
+export function press(el: HTMLElement): void {
   fire(el, "pointerdown");
   fire(el, "mousedown");
   fire(el, "pointerup");

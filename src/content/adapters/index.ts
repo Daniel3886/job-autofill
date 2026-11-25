@@ -1,10 +1,11 @@
 import type { SavedAnswer } from "../../shared/answers";
 import { genericAdapter } from "./generic";
+import { leverAdapter } from "./lever";
 import { collectSavedAnswers } from "./savedAnswers";
 import { traffitAdapter } from "./traffit";
 import type { CollectContext, FieldTarget, VendorAdapter } from "./types";
 
-export const VENDOR_ADAPTERS: VendorAdapter[] = [traffitAdapter];
+export const VENDOR_ADAPTERS: VendorAdapter[] = [traffitAdapter, leverAdapter];
 
 export function collectTargets(doc: Document, checkVisibility = true, answers: SavedAnswer[] = []): FieldTarget[] {
   const ctx: CollectContext = { checkVisibility, claimed: new Set(), claimedFields: new Set() };

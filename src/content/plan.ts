@@ -59,7 +59,7 @@ export async function planFills(
       if (!isUntouched(t.element)) continue;
       const values = choose(t, readNativeOptions(t.element), t.element.multiple, profile);
       if (values) actions.push({ kind: "select", element: t.element, values });
-    } else if (t.kind === "location" || t.kind === "combobox") {
+    } else if (t.kind === "location" || t.kind === "combobox" || t.kind === "search") {
       continue;
     } else if (t.kind === "consent") {
       if (getText(profile, CONSENT_SETTING) === "yes") actions.push({ kind: "check", element: t.element });
@@ -89,7 +89,10 @@ export async function planFills(
 
   // A field resolves to one value: the profile's when it has one, the saved answer otherwise.
   const filledByProfile = new Set(actions.flatMap((a) => (a.kind === "text" ? [a.element] : [])));
+  // A search box only keeps a value picked from its results; fillSearchBoxes uses the answer there.
+  const searchBoxes = new Set<Element>(targets.flatMap((t) => (t.kind === "search" ? [t.element] : [])));
   for (const t of answers) {
+    if (searchBoxes.has(t.element)) continue;
     if (filledByProfile.has(t.element)) {
       console.info(
         `Job Autofill: saved answer for "${rawQuestionText(t.element)}" skipped, the profile fills this field`,
