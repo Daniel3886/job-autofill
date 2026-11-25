@@ -11,7 +11,7 @@ import { acceptsFile, setFileInput } from "./drivers/file";
 import { checkRadio, radioLabel } from "./drivers/radio";
 import { isSelectized, isUntouched, readNativeOptions, setNativeSelect } from "./drivers/select";
 import { setTextValue } from "./drivers/text";
-import type { TextLike } from "./signals";
+import { rawQuestionText, type TextLike } from "./signals";
 
 export type FillAction =
   | { kind: "text"; element: TextLike; value: string }
@@ -40,10 +40,11 @@ export async function planFills(
 ): Promise<FillAction[]> {
   const actions: FillAction[] = [];
   const selectized: { tag: string; target: Extract<FieldTarget, { kind: "select" }> }[] = [];
+  const answers: Extract<FieldTarget, { kind: "answer" }>[] = [];
 
   for (const t of targets) {
     if (t.kind === "answer") {
-      actions.push({ kind: "text", element: t.element, value: t.value });
+      answers.push(t);
     } else if (t.kind === "text") {
       const value = t.fieldId === "salary" ? salaryText(t.question, profile) : getText(profile, t.fieldId);
       if (value) actions.push({ kind: "text", element: t.element, value });
@@ -76,6 +77,18 @@ export async function planFills(
       const values = choose(target, options, info.multiple, profile);
       if (values) actions.push({ kind: "selectize", target: tag, values });
     }
+  }
+
+  // A field resolves to one value: the profile's when it has one, the saved answer otherwise.
+  const filledByProfile = new Set(actions.flatMap((a) => (a.kind === "text" ? [a.element] : [])));
+  for (const t of answers) {
+    if (filledByProfile.has(t.element)) {
+      console.info(
+        `Job Autofill: saved answer for "${rawQuestionText(t.element)}" skipped, the profile fills this field`,
+      );
+      continue;
+    }
+    actions.push({ kind: "text", element: t.element, value: t.value });
   }
 
   return actions;

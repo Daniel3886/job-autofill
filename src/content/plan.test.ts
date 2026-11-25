@@ -390,10 +390,39 @@ describe("saved answers", () => {
     expect($<HTMLInputElement>("#k").value).toBe("");
   });
 
-  it("wins over the profile and the vendor adapter for the same field", async () => {
+  it("never overrides a field the profile covers", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
     const filled = await fillWithAnswers(TRAFFIT);
-    expect($<HTMLInputElement>("#f1").value).toBe("Johnny");
+    expect($<HTMLInputElement>("#f1").value).toBe("Daniel");
     expect($<HTMLInputElement>("#f2").value).toBe("Kowalski");
     expect(filled).toBe(9);
+    expect(info).toHaveBeenCalledWith(expect.stringContaining('saved answer for "Imię" skipped'));
+    info.mockRestore();
+  });
+
+  it("never overrides a profile field on a generic form", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    await fillWithAnswers(`
+      <label for="n">Imię</label><input id="n">
+      <div><div>Uwagi:</div><textarea id="u"></textarea></div>`);
+    expect($<HTMLInputElement>("#n").value).toBe("Daniel");
+    expect($<HTMLTextAreaElement>("#u").value).toBe("Dostępny od grudnia");
+    info.mockRestore();
+  });
+
+  it("fills a profile field with the saved answer when the profile leaves it empty", async () => {
+    document.body.innerHTML = `
+      <label for="n">Imię</label><input id="n">
+      <label for="s">Nazwisko</label><input id="s">`;
+    const profile: Profile = { ...PROFILE, values: { ...PROFILE.values, firstName: "" } };
+    const bridge = noMainWorld();
+    await executeActions(await planFills(collectTargets(document, false, answers), profile, bridge), bridge);
+    expect($<HTMLInputElement>("#n").value).toBe("Johnny");
+    expect($<HTMLInputElement>("#s").value).toBe("Kowalski");
+  });
+
+  it("leaves a field that already has a value", async () => {
+    await fillWithAnswers(`<div><div>Uwagi:</div><textarea id="u">Moja uwaga</textarea></div>`);
+    expect($<HTMLTextAreaElement>("#u").value).toBe("Moja uwaga");
   });
 });
