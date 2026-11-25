@@ -1,12 +1,8 @@
 import { profileStore } from "../shared/profileStore";
 import type { FillResultMessage, MainWorldRequest, SelectizeInfo } from "../shared/messages";
-import { collectTargets } from "./adapters";
-import { fillComboboxes } from "./comboboxes";
-import { findLeftovers } from "./leftovers";
-import { fillLocations } from "./location";
-import { fillSearchBoxes } from "./searchBoxes";
-import { executeActions, planFills, type FileSource, type MainWorldBridge } from "./plan";
-import { showReport } from "./report";
+import { fillDocument } from "./fill";
+import type { FileSource, MainWorldBridge } from "./plan";
+import { showProgress, showReport } from "./report";
 
 const bridge: MainWorldBridge = {
   async readSelectize(targets) {
@@ -29,25 +25,17 @@ const files: FileSource = { loadCv: () => profileStore.getCv() };
 
 async function run() {
   const [profile, answers] = await Promise.all([profileStore.get(), profileStore.getAnswers()]);
-  const targets = collectTargets(document, true, answers);
-  const actions = await planFills(targets, profile, bridge, files);
-  const located = await fillLocations(targets, profile, bridge).catch((err) => {
-    console.warn("Job Autofill: city fill failed", err);
-    return 0;
+  const { filled, leftovers } = await fillDocument(document, {
+    profile,
+    answers,
+    bridge,
+    files,
+    checkVisibility: true,
+    onProgress: (message) => showProgress(message),
   });
-  const executed = await executeActions(actions, bridge);
-  const picked = await fillComboboxes(targets, profile).catch((err) => {
-    console.warn("Job Autofill: dropdown fill failed", err);
-    return 0;
-  });
-  const searched = await fillSearchBoxes(targets, profile).catch((err) => {
-    console.warn("Job Autofill: search box fill failed", err);
-    return 0;
-  });
-  const filled = located + executed + picked + searched;
 
   try {
-    showReport(findLeftovers(document, true));
+    showReport(leftovers);
   } catch (err) {
     console.warn("Job Autofill: could not list the fields left to fill", err);
   }

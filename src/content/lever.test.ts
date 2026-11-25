@@ -2,11 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SavedAnswer } from "../shared/answers";
 import type { Profile } from "../shared/profile";
 import { mountLeverForm } from "../test/leverForm";
-import { collectTargets } from "./adapters";
-import { fillComboboxes } from "./comboboxes";
+import type { StoredFile } from "../shared/files";
+import { fillDocument } from "./fill";
 import { findLeftovers } from "./leftovers";
-import { executeActions, planFills, type MainWorldBridge } from "./plan";
-import { fillSearchBoxes } from "./searchBoxes";
+import type { FileSource, MainWorldBridge } from "./plan";
 import { rawQuestionText } from "./signals";
 import { startPicker } from "../picker/picker";
 
@@ -23,17 +22,18 @@ const bridge: MainWorldBridge = {
   searchSelectize: vi.fn(async () => null),
 };
 
-/** The same steps the content script runs on a toolbar click. */
-async function fillPage(profile: Profile, answers: SavedAnswer[] = []) {
-  const targets = collectTargets(document, false, answers);
-  const actions = await planFills(targets, profile, bridge);
-  const executed = await executeActions(actions, bridge);
-  const picked = await fillComboboxes(targets, profile);
-  const searched = await fillSearchBoxes(targets, profile);
-  return executed + picked + searched;
+const CV: StoredFile = { name: "cv.pdf", type: "application/pdf", size: 3, dataBase64: "JVBE", savedAt: "" };
+const NO_CV: FileSource = { loadCv: async () => null };
+const WITH_CV: FileSource = { loadCv: async () => CV };
+
+/** What one toolbar click does, without the panel. */
+async function fillPage(profile: Profile, answers: SavedAnswer[] = [], files = NO_CV, onProgress?: (m: string) => void) {
+  return fillDocument(document, { profile, answers, bridge, files, checkVisibility: false, onProgress });
 }
 
 const answer = (question: string, value: string): SavedAnswer => ({ question, answer: value, savedAt: "" });
+/** Lets a parse still running finish, so assertions see what the page ends up with. */
+const parserDone = () => new Promise((resolve) => setTimeout(resolve, 300));
 const field = (name: string) => document.querySelector<HTMLInputElement>(`[name="${name}"]`)!;
 
 afterEach(() => vi.restoreAllMocks());
@@ -81,7 +81,7 @@ describe("Lever: the location search box", () => {
   it("does not take a result that only starts like the answer", async () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => {});
     const { input, selected } = mountLeverForm(["Indianapolis, Indiana, United States"]);
-    expect(await fillPage(PROFILE, [answer("Current location", "India")])).toBe(3);
+    expect((await fillPage(PROFILE, [answer("Current location", "India")])).filled).toBe(3);
     expect(input.value).toBe("");
     expect(selected.value).toBe("");
     expect(info).toHaveBeenCalledWith(expect.stringContaining('"Current location" not filled: no result matched "India"'));
@@ -107,6 +107,55 @@ describe("Lever: the location search box", () => {
   });
 
 });
+describe("Lever: the CV parser that runs after the upload", () => {
+  it("fills the location after Lever has read the CV, so the parser does not clear it", async () => {
+    const { input, selected } = mountLeverForm(PLACES, 20, { position: "OneTap.Work" });
+    await fillPage(PROFILE, [answer("Current location", "India")], WITH_CV);
+    await parserDone();
+    expect(input.value).toBe("India");
+    expect(JSON.parse(selected.value)).toEqual({ name: "India" });
+  });
+
+  it("says what it is waiting for while Lever reads the CV", async () => {
+    mountLeverForm(PLACES, 20, {});
+    const onProgress = vi.fn();
+    await fillPage(PROFILE, [], WITH_CV, onProgress);
+    expect(onProgress).toHaveBeenCalledWith(expect.stringContaining("Waiting for Lever to read your CV"));
+  });
+
+  it("does not wait when no CV was attached", async () => {
+    mountLeverForm(PLACES, 20, {});
+    const onProgress = vi.fn();
+    await fillPage(PROFILE, [answer("Current location", "India")], NO_CV, onProgress);
+    expect(onProgress).not.toHaveBeenCalled();
+  });
+
+  it("keeps the profile's phone and a saved company over what the CV says", async () => {
+    mountLeverForm(PLACES, 20, { position: "Company From CV", phone: "999999999" });
+    await fillPage(PROFILE, [answer("Current company", "OneTap.Work")], WITH_CV);
+    await parserDone();
+    expect(field("phone").value).toBe("+48 600 000 000");
+    expect(field("org").value).toBe("OneTap.Work");
+  });
+
+  it("does not report the company as left when the CV filled it", async () => {
+    mountLeverForm(PLACES, 20, { position: "OneTap.Work" });
+    const { leftovers } = await fillPage(PROFILE, [], WITH_CV);
+    expect(field("org").value).toBe("OneTap.Work");
+    expect(leftovers.map((l) => l.question)).not.toContain("Current company");
+    expect(leftovers.map((l) => l.question)).toContain("Current location");
+  });
+
+  it("leaves a location the CV filled instead of typing over it", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    const { input, searches } = mountLeverForm(PLACES, 20, { location: { name: "Kraków, Poland" } });
+    await fillPage({ ...PROFILE, values: { ...PROFILE.values, city: "Warsaw", country: "Poland" } }, [], WITH_CV);
+    expect(input.value).toBe("Kraków, Poland");
+    expect(searches).toEqual([]);
+    expect(info).toHaveBeenCalledWith(expect.stringContaining("the page filled it in the meantime"));
+  });
+});
+
 describe("Lever: picking the location box with the field picker", () => {
   it("saves the answer under the clean question and fills the box so the page keeps it", async () => {
     const { input, selected } = mountLeverForm(PLACES);

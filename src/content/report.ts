@@ -35,8 +35,13 @@ export function closeReport(doc: Document = document): void {
   removeEsc = null;
 }
 
+/** Says the fill is still running and why, until the report replaces it. */
+export function showProgress(message: string, doc: Document = document): HTMLElement {
+  return showReport([], doc, message);
+}
+
 /** Shows what the fill left for the person, bottom-right. Replaces any earlier report. */
-export function showReport(items: Leftover[], doc: Document = document): HTMLElement {
+export function showReport(items: Leftover[], doc: Document = document, progress?: string): HTMLElement {
   closeReport(doc);
   const host = doc.createElement("div");
   host.id = REPORT_HOST_ID;
@@ -58,7 +63,12 @@ export function showReport(items: Leftover[], doc: Document = document): HTMLEle
   header.append(title, close);
   panel.append(header);
 
-  if (items.length === 0) {
+  if (progress) {
+    title.textContent = "Filling…";
+    const note = doc.createElement("p");
+    note.textContent = progress;
+    panel.append(note);
+  } else if (items.length === 0) {
     title.textContent = "Form filled";
     const note = doc.createElement("p");
     note.textContent = "Everything this extension can fill is filled. Check the form before you send it.";

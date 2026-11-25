@@ -7,15 +7,24 @@
  * dropdown is still open, so a value that was typed but not chosen is thrown away.
  */
 export const LEVER_FORM = `
-<style>.dropdown-container, .dropdown-no-results, .dropdown-loading-results { display: none; }</style>
+<style>
+  .dropdown-container, .dropdown-no-results, .dropdown-loading-results { display: none; }
+  .resume-upload-working, .resume-upload-success, .resume-upload-failure { display: none; }
+</style>
 <form id="application-form">
   <ul>
+    <li class="application-question"><label><div class="application-label">Resume/CV <span class="required">✱</span></div>
+      <div class="application-field"><input type="file" id="resume-upload-input" name="resume">
+        <span class="resume-upload-working">Parsing</span><span class="resume-upload-success">Success!</span>
+        <span class="resume-upload-failure">Couldn't auto-read resume.</span></div></label></li>
     <li class="application-question"><label><div class="application-label">Full name <span class="required">✱</span></div>
       <div class="application-field"><input type="text" name="name" required></div></label></li>
     <li class="application-question"><label><div class="application-label">Email <span class="required">✱</span></div>
       <div class="application-field"><input type="email" name="email" required></div></label></li>
     <li class="application-question"><label><div class="application-label">Phone <span class="required">✱</span></div>
       <div class="application-field"><input type="text" name="phone" required></div></label></li>
+    <li class="application-question"><label><div class="application-label">Current company <span class="required">✱</span></div>
+      <div class="application-field"><input type="text" name="org" required></div></label></li>
     <li class="application-question" data-qa="structured-contact-location-question"><label>
       <div class="application-label">Current location <span class="required">✱</span></div>
       <div class="application-field">
@@ -30,6 +39,13 @@ export const LEVER_FORM = `
   </ul>
 </form>`;
 
+/** What Lever's résumé parser "finds" in the uploaded CV. */
+export interface ParsedCv {
+  position?: string;
+  phone?: string;
+  location?: { name: string };
+}
+
 export interface LeverLocation {
   input: HTMLInputElement;
   selected: HTMLInputElement;
@@ -37,13 +53,19 @@ export interface LeverLocation {
   searches: string[];
 }
 
-/** Renders the form and wires up the location box like Lever's script. */
-export function mountLeverForm(places: string[], delayMs = 20): LeverLocation {
+/**
+ * Renders the form and wires up the location box like Lever's script. With `parsed`, attaching
+ * a CV runs the résumé parser: it shows "Parsing", waits `parseMs`, then writes the parsed values
+ * into every listed field nobody changed (a change/paste event marks a field as changed), and
+ * always into the hidden #selected-location.
+ */
+export function mountLeverForm(places: string[], delayMs = 20, parsed?: ParsedCv, parseMs = 150): LeverLocation {
   document.body.innerHTML = LEVER_FORM;
-  const input = document.querySelector<HTMLInputElement>("input.location-input")!;
+  const form = document.querySelector<HTMLFormElement>("#application-form")!;
+  const input = form.querySelector<HTMLInputElement>("input.location-input")!;
   const selected = document.querySelector<HTMLInputElement>("#selected-location")!;
   const show = (sel: string, on: boolean) => {
-    document.querySelector<HTMLElement>(sel)!.style.display = on ? "flex" : "none";
+    form.querySelector<HTMLElement>(sel)!.style.display = on ? "flex" : "none";
   };
   const results = document.querySelector<HTMLElement>(".dropdown-results")!;
   const searches: string[] = [];
@@ -77,15 +99,14 @@ export function mountLeverForm(places: string[], delayMs = 20): LeverLocation {
     }, delayMs);
   });
   input.addEventListener("blur", () => {
-    if (document.querySelector<HTMLElement>(".dropdown-container")!.style.display !== "none" &&
-        getComputedStyle(document.querySelector(".dropdown-container")!).display !== "none") {
+    if (getComputedStyle(form.querySelector(".dropdown-container")!).display !== "none") {
       show(".dropdown-container", false);
       empty();
       input.value = "";
       selected.value = "";
     }
   });
-  document.addEventListener("mousedown", (e) => {
+  form.addEventListener("mousedown", (e) => {
     const row = (e.target as Element).closest?.(".dropdown-location");
     if (!row) return;
     show(".dropdown-container", false);
@@ -93,5 +114,55 @@ export function mountLeverForm(places: string[], delayMs = 20): LeverLocation {
     selected.value = JSON.stringify({ name: found[Number(row.id.split("-")[1])] });
     empty();
   });
+  if (parsed) {
+    stubFileUpload(document.querySelector<HTMLInputElement>("#resume-upload-input")!);
+    const touched = new Set<Element>();
+    const parsedFields = ["org", "phone", "name", "email", "location"].map(
+      (name) => document.querySelector<HTMLInputElement>(`input[name="${name}"]`)!,
+    );
+    for (const f of parsedFields) for (const type of ["change", "paste"]) f.addEventListener(type, () => touched.add(f));
+    const write = (f: HTMLInputElement, value: string | undefined) => {
+      if (!(touched.has(f) && f.value)) f.value = value ?? "";
+    };
+    // Captured now: a parse still running when the next test mounts must not touch its form.
+    const [org, phone] = parsedFields;
+    const shown = (sel: string, on: boolean) => {
+      form.querySelector<HTMLElement>(sel)!.style.display = on ? "inline" : "none";
+    };
+    document.querySelector("#resume-upload-input")!.addEventListener("change", () => {
+      shown(".resume-upload-working", true);
+      setTimeout(() => {
+        shown(".resume-upload-working", false);
+        shown(".resume-upload-success", true);
+        write(org, parsed.position);
+        write(phone, parsed.phone);
+        write(input, parsed.location?.name);
+        write(selected, JSON.stringify(parsed.location));
+      }, parseMs);
+    });
+  }
   return { input, selected, searches };
+}
+
+/**
+ * jsdom has no DataTransfer and only accepts its own FileList on `input.files`. This lets the
+ * extension's upload code (DataTransfer, then `input.files = …`) run on one input.
+ */
+function stubFileUpload(input: HTMLInputElement): void {
+  class FakeDataTransfer {
+    private list: File[] = [];
+    items = { add: (file: File) => this.list.push(file) };
+    get files() {
+      return Object.assign([...this.list], { item: (i: number) => this.list[i] ?? null });
+    }
+  }
+  (globalThis as { DataTransfer?: unknown }).DataTransfer ??= FakeDataTransfer;
+  let files: unknown = [];
+  Object.defineProperty(input, "files", {
+    get: () => files,
+    set: (v) => {
+      files = v;
+    },
+    configurable: true,
+  });
 }
