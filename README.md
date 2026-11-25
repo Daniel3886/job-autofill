@@ -39,7 +39,7 @@ For questions the extension does not know (e.g. "Czy znasz Dockera i OpenShift?"
 2. Click a text field. A panel shows the field's question (editable) and an answer box.
 3. **Save and fill** stores the answer and fills the field. Esc cancels.
 
-From then on, one click fills any field whose question matches, ignoring case, Polish letters and punctuation. Saved answers take priority over everything else. They are listed, editable and removable on the profile page.
+From then on, one click fills any field whose question matches, ignoring case, Polish letters and punctuation. A saved answer never replaces a value from your profile: on a field your profile fills, such as your name or email, the profile wins. A saved answer fills it only while that profile field is empty. Saved answers are listed, editable and removable on the profile page.
 
 ## Languages of job forms
 
