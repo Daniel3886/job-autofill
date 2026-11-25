@@ -1,4 +1,4 @@
-/** Shadow hosts this extension draws itself (the field picker). Their controls are not the form's. */
+/** Shadow hosts this extension draws itself (the field picker, the fill report). Their controls are not the form's. */
 const OWN_HOST = /^job-autofill/;
 
 /**

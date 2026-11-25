@@ -2,8 +2,10 @@ import { profileStore } from "../shared/profileStore";
 import type { FillResultMessage, MainWorldRequest, SelectizeInfo } from "../shared/messages";
 import { collectTargets } from "./adapters";
 import { fillComboboxes } from "./comboboxes";
+import { findLeftovers } from "./leftovers";
 import { fillLocations } from "./location";
 import { executeActions, planFills, type FileSource, type MainWorldBridge } from "./plan";
+import { showReport } from "./report";
 
 const bridge: MainWorldBridge = {
   async readSelectize(targets) {
@@ -38,6 +40,12 @@ async function run() {
     return 0;
   });
   const filled = located + executed + picked;
+
+  try {
+    showReport(findLeftovers(document, true));
+  } catch (err) {
+    console.warn("Job Autofill: could not list the fields left to fill", err);
+  }
 
   const result: FillResultMessage = { type: "fill-result", filled };
   await chrome.runtime.sendMessage(result);
