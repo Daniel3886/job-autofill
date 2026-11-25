@@ -57,8 +57,17 @@ test.beforeAll(async () => {
   context = launched;
   worker = launched.serviceWorkers()[0] ?? (await launched.waitForEvent("serviceworker"));
   await worker.evaluate(async (profile) => {
-    await chrome.storage.local.clear();
-    await chrome.storage.local.set({ profile });
+    // The worker sets up candidate profiles when it is installed. Wait for that, then write the
+    // fake profile in the same shape (shared values plus one "Default" profile), in one write,
+    // so the setup can never run again in between and replace it with an empty profile.
+    for (let i = 0; i < 100 && !(await chrome.storage.local.get("profiles")).profiles; i++) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    const profiles = {
+      activeId: "default",
+      list: [{ id: "default", name: "Default", values: profile.values, languages: profile.languages }],
+    };
+    await chrome.storage.local.set({ profile, profiles });
   }, PROFILE);
 });
 

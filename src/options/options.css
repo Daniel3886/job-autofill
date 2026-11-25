@@ -624,3 +624,48 @@ textarea:focus {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+/* Candidate profiles: which one is edited, which one fills, and what to do with it. */
+.profile-bar {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.profile-bar label {
+  max-width: 420px;
+}
+
+.profile-bar .hint {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-actions button.primary {
+  padding: 8px 18px;
+}
+
+.filling-badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--success);
+  color: var(--success);
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+button.secondary.danger:not(:disabled) {
+  color: var(--danger);
+  border-color: var(--danger);
+}

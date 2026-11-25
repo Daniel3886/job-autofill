@@ -24,7 +24,7 @@ const bridge: MainWorldBridge = {
 const files: FileSource = { loadCv: () => profileStore.getCv() };
 
 async function run() {
-  const [profile, answers] = await Promise.all([profileStore.get(), profileStore.getAnswers()]);
+  const [profile, answers] = await Promise.all([profileStore.getActive(), profileStore.getAnswers()]);
   const { filled, leftovers } = await fillDocument(document, {
     profile,
     answers,

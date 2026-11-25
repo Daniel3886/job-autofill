@@ -35,8 +35,21 @@ A choice is filled only when exactly one option on the page matches your answer.
 - **Drivers** put values into controls. Values are set through the native setter, followed by `input` and `change` events, so React and Vue forms register them.
 - **Selectize** keeps its options in a page JavaScript object that the isolated content script cannot see. The service worker runs `src/background/mainWorld.ts` in the page's MAIN world to read options and call `setValue`. Only element tags and option ids cross that boundary, plus your city for the location search, since the page sends those to its own server anyway.
 - **After a fill**, a small panel in the bottom-right corner lists the questions still empty under "Left for you", with required ones first and marked. Hidden fields, honeypots and optional checkboxes are not listed. Close it with × or Esc. When nothing is left, a short note says so and disappears after a few seconds. The panel shows only the questions, never your answers.
-- **The CV** is stored in `chrome.storage.local` as base64 under its own key, so reading the profile never loads it. `unlimitedStorage` lifts the 10 MB quota. The content script loads it only when the page has a CV field, then sets it on the input through `DataTransfer`.
+- **The CV** of each profile is stored in `chrome.storage.local` as base64 under its own key (`cv:<profile id>`), so reading a profile never loads it. `unlimitedStorage` lifts the 10 MB quota. The content script loads it only when the page has a CV field, then sets it on the input through `DataTransfer`.
 - The extension uses `activeTab`, so it can touch a page only after you click the icon on it.
+
+## Candidate profiles
+
+Apply with more than one CV, for example "Backend – EN" and "Frontend – PL":
+
+- **Shared by all profiles:** first name, last name, email, phone, the consent setting and your saved answers.
+- **Each profile's own:** CV, location (city, province, country), preferences (availability, contract types, work mode), links, languages and salary.
+
+On the profile page, the bar at the top picks the profile you are editing and offers **New**, **Duplicate** (values and CV included), **Rename**, **Delete** and **Use for filling**. The last profile cannot be deleted. If you switch to another profile with unsaved changes, the page asks to save them first and stays put if you cancel.
+
+One profile is used for filling at a time. Switch it from the extension icon's right-click menu (**Fill with profile**), or press **Alt+Shift+P** (**Option+Shift+P** on a Mac) to move to the next one. The icon flashes the first two letters of the new profile, and its tooltip names the profile in use.
+
+Your data from before profiles existed becomes a profile called "Default", CV included.
 
 ## Saved answers
 
