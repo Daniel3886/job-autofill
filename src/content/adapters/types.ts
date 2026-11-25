@@ -9,6 +9,7 @@ export type FieldTarget =
   | { kind: "location"; fieldId: "city"; question: string; element: HTMLSelectElement }
   | { kind: "date"; question: string; element: HTMLInputElement; format: string }
   | { kind: "consent"; element: HTMLInputElement }
+  | { kind: "combobox"; fieldId: string; question: string; element: HTMLElement }
   | { kind: "answer"; element: TextLike; value: string };
 
 export interface CollectContext {

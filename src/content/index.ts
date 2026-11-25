@@ -1,6 +1,7 @@
 import { profileStore } from "../shared/profileStore";
 import type { FillResultMessage, MainWorldRequest, SelectizeInfo } from "../shared/messages";
 import { collectTargets } from "./adapters";
+import { fillComboboxes } from "./comboboxes";
 import { fillLocations } from "./location";
 import { executeActions, planFills, type FileSource, type MainWorldBridge } from "./plan";
 
@@ -31,7 +32,12 @@ async function run() {
     console.warn("Job Autofill: city fill failed", err);
     return 0;
   });
-  const filled = located + (await executeActions(actions, bridge));
+  const executed = await executeActions(actions, bridge);
+  const picked = await fillComboboxes(targets, profile).catch((err) => {
+    console.warn("Job Autofill: dropdown fill failed", err);
+    return 0;
+  });
+  const filled = located + executed + picked;
 
   const result: FillResultMessage = { type: "fill-result", filled };
   await chrome.runtime.sendMessage(result);

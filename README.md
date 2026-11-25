@@ -12,7 +12,7 @@
 ## What it fills
 
 - **Text fields and textareas:** first name, last name, email, phone, city, province (województwo), country, and salary. A single box for the whole name (Full name, Name, Imię i nazwisko) gets your first and last name, and only when both are saved.
-- **Choice questions** (native selects, Selectize dropdowns, radio groups): English level, availability, contract types, work mode, and salary buckets.
+- **Choice questions** (native selects, Selectize dropdowns, ARIA combobox dropdowns such as react-select or Radix Select, radio groups): English level, availability, contract types, work mode, and salary buckets.
 - **Language levels on a form's own scale.** When a level question offers no CEFR codes, only a known scale such as Brak, Podstawowy, Komunikatywny, Dobry, Biegły, Ojczysty, your level is placed by position: native at the top, C1 or C2 one step below it, B2 the step below that, and so on. This applies only when every option is a known proficiency word, there are at least four, and one end is clearly the lowest. The page console names the option picked so you can check it.
 - **Province and country dropdowns** labelled Województwo or Kraj (or Province, Country): the option with your saved name is picked. A "woj." or "województwo" prefix on the option is ignored, so "Mazowieckie" matches "woj. mazowieckie". A country saved in one language is also found under its name in another, so "Poland" picks "Polska" and "Deutschland" picks "Niemcy". If two options name the same country, the dropdown is left for you.
 - **Traffit city dropdown:** the "Lokalizacja (Miasto)" search box. The extension searches for your saved city and picks the result whose name matches. English city names such as Warsaw, and names typed without ł such as Wroclaw, are looked up by their Polish spelling, and anything after a comma or bracket ("Warszawa, Polska") is ignored. The country dropdown is left as the form set it. When the city is not filled, the page console says why.
@@ -22,13 +22,16 @@
 
 A choice is filled only when exactly one option on the page matches your answer. Anything ambiguous, such as "hybrid" on a form with four hybrid options or a salary between two buckets, is left for you. Inputs that already have a value are never overwritten.
 
-Not supported yet: location search dropdowns outside Traffit, drag-and-drop-only upload zones, iframes, yes/no skill questions, and a custom field picker.
+- **City search boxes** that follow the ARIA combobox pattern: the extension types your city (then its Polish spelling) and picks the result named like it. A result that only contains the name, such as "Warsaw Chopin Airport", is not taken, and a search that finds nothing is cleared.
+
+Not supported yet: drag-and-drop-only upload zones, iframes, closed shadow roots, and yes/no skill questions.
 
 ## How it works
 
 ![Saving a profile on the options page, then filling a job application form with one click](docs/demo-dark.gif)
 
 - **Adapters** identify fields. The first vendor adapter whose `detect()` matches runs, then the generic adapter handles everything it did not claim. To add an ATS, write `src/content/adapters/<vendor>.ts` and add it to `VENDOR_ADAPTERS`.
+- **ARIA comboboxes** cannot be given a value directly, so the driver does what a person does: it opens the list, reads its `role="option"` rows, and clicks the single one that matches. A dropdown that already shows a value is never opened.
 - **Drivers** put values into controls. Values are set through the native setter, followed by `input` and `change` events, so React and Vue forms register them.
 - **Selectize** keeps its options in a page JavaScript object that the isolated content script cannot see. The service worker runs `src/background/mainWorld.ts` in the page's MAIN world to read options and call `setValue`. Only element tags and option ids cross that boundary, plus your city for the location search, since the page sends those to its own server anyway.
 - **The CV** is stored in `chrome.storage.local` as base64 under its own key, so reading the profile never loads it. `unlimitedStorage` lifts the 10 MB quota. The content script loads it only when the page has a CV field, then sets it on the input through `DataTransfer`.

@@ -59,7 +59,7 @@ export async function planFills(
       if (!isUntouched(t.element)) continue;
       const values = choose(t, readNativeOptions(t.element), t.element.multiple, profile);
       if (values) actions.push({ kind: "select", element: t.element, values });
-    } else if (t.kind === "location") {
+    } else if (t.kind === "location" || t.kind === "combobox") {
       continue;
     } else if (t.kind === "consent") {
       if (getText(profile, CONSENT_SETTING) === "yes") actions.push({ kind: "check", element: t.element });
@@ -120,7 +120,7 @@ export async function executeActions(actions: FillAction[], bridge: MainWorldBri
   return filled;
 }
 
-function choose(t: Exclude<FieldTarget, { kind: "answer" | "date" | "consent" }>, options: ChoiceOption[], multiple: boolean, profile: Profile): string[] | null {
+export function choose(t: { fieldId: string; question: string }, options: ChoiceOption[], multiple: boolean, profile: Profile): string[] | null {
   if (t.fieldId === "salary") {
     const amount = salaryAmount(t.question, profile);
     const option = amount === null ? null : matchSalaryOption(amount, options);

@@ -2,6 +2,7 @@ import { classifyQuestion } from "../choices/choiceRules";
 import { classifyPlaceQuestion } from "../choices/places";
 import { collectConsentBoxes } from "../consent";
 import { queryAllDeep } from "../dom";
+import { collectComboboxes } from "../drivers/combobox";
 import { collectRadioGroups } from "../drivers/radio";
 import { isSelectized } from "../drivers/select";
 import { collectTextInputs } from "../drivers/text";
@@ -10,7 +11,7 @@ import { FIELD_RULES } from "../fieldRules";
 import { matchInputs } from "../matcher";
 import { isCvQuestion } from "../fileRules";
 import { questionText } from "../signals";
-import { normalize } from "../text";
+import { containsPhrase, normalize } from "../text";
 import { isHiddenByMarkup, isHoneypot, isPersonFacing } from "../visibility";
 import type { FieldTarget, VendorAdapter } from "./types";
 
@@ -57,6 +58,15 @@ export const genericAdapter: VendorAdapter = {
       if (fieldId && !ctx.claimedFields.has(fieldId)) {
         targets.push({ kind: "radio", fieldId, question: group.question, radios: group.radios });
       }
+    }
+
+    const cityKeywords = FIELD_RULES.find((r) => r.id === "city")?.keywords ?? [];
+    for (const element of collectComboboxes(doc)) {
+      if (ctx.claimed.has(element) || !isPersonFacing(element, ctx.checkVisibility)) continue;
+      const question = questionText(element);
+      const isCity = cityKeywords.some((k) => containsPhrase(question, k));
+      const fieldId = classifyQuestion(question) ?? classifyPlaceQuestion(question) ?? (isCity ? "city" : null);
+      if (fieldId && !ctx.claimedFields.has(fieldId)) targets.push({ kind: "combobox", fieldId, question, element });
     }
 
     for (const box of collectConsentBoxes(doc, ctx.claimed)) targets.push({ kind: "consent", element: box });

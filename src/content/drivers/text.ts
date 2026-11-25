@@ -42,7 +42,11 @@ export function collectTextInputs(
   exclude: Set<Element> = new Set(),
 ): TextLike[] {
   return queryAllDeep<TextLike>(root, "input, textarea").filter(
-    (el) => !exclude.has(el) && !el.closest(".selectize-control") && isFillableText(el, checkVisibility),
+    (el) =>
+      !exclude.has(el) &&
+      !el.closest(".selectize-control") &&
+      el.getAttribute("role") !== "combobox" &&
+      isFillableText(el, checkVisibility),
   );
 }
 
