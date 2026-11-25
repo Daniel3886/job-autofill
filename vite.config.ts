@@ -23,5 +23,7 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    // e2e/ runs in a real browser through `npm run e2e`, never in `npm test`.
+    include: ["src/**/*.test.ts"],
   },
 });

@@ -67,6 +67,15 @@ npm run build     # outputs dist/
 
 Load it: open `chrome://extensions`, turn on Developer mode, click "Load unpacked", and choose `dist/`. After a rebuild, click the reload button on the extension card.
 
+### End-to-end tests
+
+```sh
+npx playwright install chromium   # once
+npm run build && npm run e2e
+```
+
+`npm run e2e` loads the built extension into headless Chromium and fills the local forms in `e2e/fixtures/` with a fake profile, checking what is filled and what is left alone. A test cannot click the toolbar icon, so the script first copies `dist/` to `dist-e2e/` with host access to `127.0.0.1` and `localhost`, and the test injects `content.js` the same way the click does. The shipped `dist/` is unchanged. Set `CHROMIUM_PATH` to use a Chromium you already have; branded Google Chrome ignores `--load-extension`. These tests are not part of `npm test`.
+
 ## License
 
 [MIT](LICENSE)

@@ -4,9 +4,10 @@
   "description": "Chrome/Chromium extension that fills job application forms in one click",
   "scripts": {
     "build": "vite build && vite build -c vite.content.config.ts --mode content && vite build -c vite.content.config.ts --mode picker",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p e2e",
     "test": "vitest run",
-    "lint": "oxlint -c .oxlintrc.json --deny-warnings src vite.config.ts vite.content.config.ts"
+    "e2e": "node scripts/build-e2e.mjs && playwright test -c e2e/playwright.config.ts",
+    "lint": "oxlint -c .oxlintrc.json --deny-warnings src e2e scripts vite.config.ts vite.content.config.ts"
   },
   "type": "module",
   "dependencies": {
@@ -14,6 +15,7 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.0",
     "@types/chrome": "^0.3.7",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
