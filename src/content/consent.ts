@@ -2,9 +2,11 @@ import { queryAllDeep } from "./dom";
 import { words } from "./locales";
 import { ownLabelText } from "./signals";
 import { containsPhrase, normalize } from "./text";
-import { isHiddenByMarkup, isHoneypot } from "./visibility";
+import { isHiddenByMarkup, isHoneypot, parentOf } from "./visibility";
 
 const DATA_PROCESSING = words((l) => l.consent?.dataProcessing);
+const TERMS = words((l) => l.consent?.terms);
+const CAPTCHA = /captcha|turnstile/i;
 const REQUIRED_WORDS = words((l) => l.consent?.required);
 const NEVER = words((l) => l.consent?.never);
 const MAX_CONSENT_TEXT = 1500;
@@ -29,15 +31,28 @@ function isRequired(box: HTMLInputElement, raw: string): boolean {
   return REQUIRED_WORDS.some((w) => containsPhrase(text, w));
 }
 
+/** Inside a captcha widget (reCAPTCHA, hCaptcha, Turnstile): never the extension's to tick. */
+function isInCaptcha(box: HTMLInputElement): boolean {
+  for (let node: Element | null = box; node; node = parentOf(node)) {
+    const marks = `${node.id} ${node.getAttribute("class") ?? ""} ${node.getAttribute("title") ?? ""}`;
+    if (CAPTCHA.test(marks)) return true;
+  }
+  return false;
+}
+
 /**
- * A required consent to processing personal data for this application. Optional boxes, and any
- * box that also mentions future recruitment, talent pools, marketing or newsletters, never count.
+ * A required box that agrees to this application's paperwork: processing personal data, the
+ * privacy policy, or the terms ("regulamin"). Optional boxes, and any box that also mentions
+ * future recruitment, talent pools, marketing, newsletters or partners, never count. Boxes inside
+ * iframes are never reached, since the scan does not enter them.
  */
-export function isRequiredDataConsent(box: HTMLInputElement): boolean {
+export function isRequiredConsentOrTerms(box: HTMLInputElement): boolean {
+  if (isInCaptcha(box)) return false;
   const raw = consentText(box);
   const text = normalize(raw);
   if (!text || NEVER.some((w) => containsPhrase(text, w))) return false;
-  return DATA_PROCESSING.some((w) => containsPhrase(text, w)) && isRequired(box, raw);
+  const topic = [...DATA_PROCESSING, ...TERMS].some((w) => containsPhrase(text, w));
+  return topic && isRequired(box, raw);
 }
 
 export function collectConsentBoxes(root: ParentNode, claimed: Set<Element>): HTMLInputElement[] {
@@ -48,6 +63,6 @@ export function collectConsentBoxes(root: ParentNode, claimed: Set<Element>): HT
       !box.disabled &&
       !isHoneypot(box) &&
       !isHiddenByMarkup(box) &&
-      isRequiredDataConsent(box),
+      isRequiredConsentOrTerms(box),
   );
 }

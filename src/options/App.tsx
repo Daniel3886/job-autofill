@@ -166,11 +166,11 @@ export function App() {
                   checked={getText(profile, CONSENT_SETTING) === "yes"}
                   onChange={(e) => update(CONSENT_SETTING, e.target.checked ? "yes" : "")}
                 />
-                Tick required consent to processing my data for the job I apply to
+                Tick required consent and terms boxes
               </label>
               <p className="hint">
-                Only a box the form marks as required. Boxes for future recruitment, talent pools, marketing or
-                newsletters are never ticked.
+                Only boxes the form marks as required: data processing, privacy policy, terms or regulamin. Marketing,
+                newsletter, talent-pool and future-recruitment boxes are never ticked.
               </p>
             </fieldset>
           </div>

@@ -83,6 +83,7 @@
   },
   "consent": {
     "dataProcessing": ["processing of my personal data", "process my personal data", "processing my personal data", "processing of personal data", "personal data processing", "privacy policy", "privacy notice", "gdpr"],
+    "terms": ["terms of service", "terms of use", "terms and conditions", "terms conditions", "terms & conditions", "general terms", "privacy notice"],
     "required": ["required", "mandatory"],
     "never": ["future recruitment", "future recruitments", "future opportunities", "future positions", "future roles", "other positions", "talent pool", "talent community", "talent network", "newsletter", "marketing", "commercial", "job alert", "job alerts", "stay in touch", "partners", "third parties"]
   },

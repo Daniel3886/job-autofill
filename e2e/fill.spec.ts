@@ -94,6 +94,7 @@ test("fills a Polish form and leaves traps, optional consents and typed values a
   await expect(page.locator("#country")).toHaveValue("PL");
   await expect(page.locator("#start")).toHaveValue(inTwoWeeks());
   await expect(page.locator("#rodo")).toBeChecked();
+  await expect(page.locator("#regulamin")).toBeChecked();
 
   await expect(page.locator("#trap")).toHaveValue("");
   await expect(page.locator("#future")).not.toBeChecked();

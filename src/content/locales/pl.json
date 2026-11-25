@@ -79,6 +79,7 @@
   },
   "consent": {
     "dataProcessing": ["przetwarzanie moich danych osobowych", "przetwarzanie danych osobowych", "przetwarzanie moich danych", "polityką prywatności", "polityka prywatności", "klauzulą informacyjną", "klauzula informacyjna", "rodo"],
+    "terms": ["regulamin", "regulaminem", "regulaminu", "regulaminie", "zapoznałem się z regulaminem", "zapoznałam się z regulaminem", "akceptuję regulamin", "warunki korzystania", "warunkami korzystania"],
     "required": ["wymagane", "wymagana", "obowiązkowe", "obowiązkowa"],
     "never": ["przyszłych rekrutacji", "przyszłych rekrutacjach", "przyszłych procesach rekrutacyjnych", "przyszłych procesów rekrutacyjnych", "innych rekrutacji", "innych stanowisk", "newsletter", "marketing", "marketingowych", "handlowych", "handlowej", "alertów", "powiadomień o ofertach", "partnerów", "podmiotów trzecich"]
   },
