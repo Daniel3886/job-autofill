@@ -13,6 +13,7 @@ export interface Locale {
   cv?: { keywords?: string[]; otherDocuments?: string[] };
   places?: string[][];
   placePrefixes?: string[];
+  startDate?: string[];
 }
 
 export const LOCALES: Locale[] = [en, pl];

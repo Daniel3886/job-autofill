@@ -11,6 +11,7 @@ import { acceptsFile, setFileInput } from "./drivers/file";
 import { checkRadio, radioLabel } from "./drivers/radio";
 import { isSelectized, isUntouched, readNativeOptions, setNativeSelect } from "./drivers/select";
 import { setTextValue } from "./drivers/text";
+import { formatDate, startDate } from "./dates";
 import { rawQuestionText, type TextLike } from "./signals";
 
 export type FillAction =
@@ -37,6 +38,7 @@ export async function planFills(
   profile: Profile,
   bridge: MainWorldBridge,
   files: FileSource = NO_FILES,
+  today: Date = new Date(),
 ): Promise<FillAction[]> {
   const actions: FillAction[] = [];
   const selectized: { tag: string; target: Extract<FieldTarget, { kind: "select" }> }[] = [];
@@ -58,6 +60,9 @@ export async function planFills(
       if (values) actions.push({ kind: "select", element: t.element, values });
     } else if (t.kind === "location") {
       continue;
+    } else if (t.kind === "date") {
+      const date = startDate(getText(profile, "availability"), today);
+      if (date) actions.push({ kind: "text", element: t.element, value: formatDate(date, t.format) });
     } else if (t.kind === "file") {
       const cv = await files.loadCv();
       if (cv && acceptsFile(t.element, cv.name, cv.type)) actions.push({ kind: "file", element: t.element, file: cv });
@@ -112,7 +117,7 @@ export async function executeActions(actions: FillAction[], bridge: MainWorldBri
   return filled;
 }
 
-function choose(t: Exclude<FieldTarget, { kind: "answer" }>, options: ChoiceOption[], multiple: boolean, profile: Profile): string[] | null {
+function choose(t: Exclude<FieldTarget, { kind: "answer" | "date" }>, options: ChoiceOption[], multiple: boolean, profile: Profile): string[] | null {
   if (t.fieldId === "salary") {
     const amount = salaryAmount(t.question, profile);
     const option = amount === null ? null : matchSalaryOption(amount, options);

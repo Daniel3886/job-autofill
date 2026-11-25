@@ -7,6 +7,7 @@ export type FieldTarget =
   | { kind: "radio"; fieldId: string; question: string; radios: HTMLInputElement[] }
   | { kind: "file"; fieldId: "cv"; question: string; element: HTMLInputElement }
   | { kind: "location"; fieldId: "city"; question: string; element: HTMLSelectElement }
+  | { kind: "date"; question: string; element: HTMLInputElement; format: string }
   | { kind: "answer"; element: TextLike; value: string };
 
 export interface CollectContext {

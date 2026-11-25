@@ -4,6 +4,7 @@ import { queryAllDeep } from "../dom";
 import { collectRadioGroups } from "../drivers/radio";
 import { isSelectized } from "../drivers/select";
 import { collectTextInputs } from "../drivers/text";
+import { dateFormat, isStartDateQuestion } from "../dates";
 import { FIELD_RULES } from "../fieldRules";
 import { matchInputs } from "../matcher";
 import { isCvQuestion } from "../fileRules";
@@ -24,8 +25,20 @@ export const genericAdapter: VendorAdapter = {
 
     const rules = FIELD_RULES.filter((r) => !ctx.claimedFields.has(r.id));
     const inputs = collectTextInputs(doc, ctx.checkVisibility, ctx.claimed);
+    const matched = new Set<Element>();
     for (const m of matchInputs(inputs, rules)) {
+      matched.add(m.element);
       targets.push({ kind: "text", fieldId: m.fieldId, question: m.question, element: m.element });
+    }
+
+    // Start-date boxes: a native date input, or a text box whose placeholder shows the format.
+    for (const input of [...inputs, ...queryAllDeep<HTMLInputElement>(doc, 'input[type="date"]')]) {
+      if (matched.has(input) || !(input instanceof HTMLInputElement) || ctx.claimed.has(input)) continue;
+      const isNative = input.type === "date";
+      if (isNative && (input.value !== "" || input.disabled || input.readOnly || !isPersonFacing(input, ctx.checkVisibility))) continue;
+      const format = isNative ? "YYYY-MM-DD" : dateFormat(input.placeholder);
+      const question = questionText(input);
+      if (format && isStartDateQuestion(question)) targets.push({ kind: "date", question, element: input, format });
     }
 
     for (const select of queryAllDeep<HTMLSelectElement>(doc, "select")) {

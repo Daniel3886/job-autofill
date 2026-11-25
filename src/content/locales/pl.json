@@ -72,6 +72,7 @@
     "below": ["poniżej", "do"],
     "above": ["powyżej", "od"]
   },
+  "startDate": ["data rozpoczęcia", "data rozpoczęcia pracy", "dostępny od", "dostępna od", "dostępność od", "data dostępności", "od kiedy możesz zacząć"],
   "cv": {
     "keywords": ["życiorys"],
     "otherDocuments": ["list motywacyjny", "certyfikat"]

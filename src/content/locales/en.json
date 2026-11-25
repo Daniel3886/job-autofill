@@ -76,6 +76,7 @@
     "below": ["below", "under", "less than", "up to"],
     "above": ["above", "over", "more than", "from"]
   },
+  "startDate": ["start date", "earliest start date", "available from", "availability date", "date available", "when can you start"],
   "cv": {
     "keywords": ["cv", "resume", "curriculum vitae"],
     "otherDocuments": ["cover letter", "motivation letter", "portfolio", "certificate"]
