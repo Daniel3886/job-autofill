@@ -1,5 +1,5 @@
 import { byIdNear, queryAllDeep } from "../dom";
-import { findNearbyText } from "../signals";
+import { cleanQuestion, findNearbyText } from "../signals";
 import { normalize } from "../text";
 import { isHiddenByMarkup, isHoneypot } from "../visibility";
 
@@ -38,6 +38,11 @@ export function checkRadio(r: HTMLInputElement): void {
 }
 
 function groupQuestion(radios: HTMLInputElement[]): string {
+  return normalize(rawGroupQuestion(radios));
+}
+
+/** The question a radio group answers, as the page words it: its legend, ARIA label, or nearby text. */
+export function rawGroupQuestion(radios: HTMLInputElement[]): string {
   const container = commonAncestor(radios);
   if (!container) return "";
 
@@ -45,21 +50,30 @@ function groupQuestion(radios: HTMLInputElement[]): string {
   const legend = fieldset?.querySelector("legend");
   if (fieldset && legend) {
     const names = new Set([...fieldset.querySelectorAll<HTMLInputElement>('input[type="radio"]')].map((r) => r.name));
-    if (names.size === 1) return normalize(legend.textContent ?? "");
+    if (names.size === 1) return cleanQuestion(legend.textContent ?? "");
   }
 
   const group = container.closest('[role="radiogroup"]');
   if (group) {
     const aria = group.getAttribute("aria-label");
-    if (aria) return normalize(aria);
+    if (aria) return cleanQuestion(aria);
     const by = group.getAttribute("aria-labelledby");
-    if (by) return normalize(byIdNear(container, by)?.textContent ?? "");
+    if (by) return cleanQuestion(byIdNear(container, by)?.textContent ?? "");
   }
 
-  return normalize(findNearbyText(container));
+  return cleanQuestion(findNearbyText(container));
 }
 
-function commonAncestor(elements: HTMLElement[]): HTMLElement | null {
+/** Every radio sharing `radio`'s name and form, in its document or shadow root. */
+export function radioGroupOf(radio: HTMLInputElement): HTMLInputElement[] {
+  if (!radio.name) return [radio];
+  const root = radio.getRootNode() as ParentNode;
+  return queryAllDeep<HTMLInputElement>(root, 'input[type="radio"]').filter(
+    (r) => r.name === radio.name && r.form === radio.form,
+  );
+}
+
+export function commonAncestor(elements: HTMLElement[]): HTMLElement | null {
   let node = elements[0]?.parentElement ?? null;
   while (node && !elements.every((e) => node!.contains(e))) node = node.parentElement;
   return node;

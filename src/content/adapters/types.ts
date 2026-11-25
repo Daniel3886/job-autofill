@@ -1,3 +1,4 @@
+import type { ChoiceControl } from "../choiceControls";
 import type { TextFieldId } from "../fieldRules";
 import type { SearchBoxSpec } from "../drivers/searchBox";
 import type { TextLike } from "../signals";
@@ -12,7 +13,8 @@ export type FieldTarget =
   | { kind: "consent"; element: HTMLInputElement }
   | { kind: "combobox"; fieldId: string; question: string; element: HTMLElement }
   | { kind: "search"; fieldId: "city"; question: string; element: HTMLInputElement; spec: SearchBoxSpec }
-  | { kind: "answer"; element: TextLike; value: string };
+  | { kind: "answer"; element: TextLike; value: string }
+  | { kind: "choiceAnswer"; control: ChoiceControl; question: string; value: string };
 
 export interface CollectContext {
   checkVisibility: boolean;

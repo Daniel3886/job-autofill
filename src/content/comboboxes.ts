@@ -11,6 +11,7 @@ import {
 import { chooseLocation, cityNames } from "./location";
 import { choose } from "./plan";
 import { byIdNear } from "./dom";
+import { chooseByText } from "./choiceControls";
 
 type ComboboxTarget = Extract<FieldTarget, { kind: "combobox" }>;
 
@@ -74,10 +75,33 @@ async function fillChoiceByName(t: ComboboxTarget, saved: string): Promise<strin
   return "filled";
 }
 
+/**
+ * A saved answer for a combobox. Saved answers come after the profile's targets, so a combobox
+ * the profile filled already shows a value here and is left alone.
+ */
+async function fillSavedChoice(t: Extract<FieldTarget, { kind: "choiceAnswer" }>, element: HTMLElement): Promise<number> {
+  if (!isComboboxEmpty(element)) {
+    console.info(`Job Autofill: saved answer for "${t.question}" skipped, the profile fills this field`);
+    return 0;
+  }
+  try {
+    const why = await chooseByText({ type: "combobox", element }, t.value);
+    if (!why) return 1;
+    console.info(`Job Autofill: saved answer for "${t.question}" not used: ${why}`);
+  } catch (err) {
+    console.warn(`Job Autofill: dropdown "${t.question}" failed`, err);
+  }
+  return 0;
+}
+
 /** Fills ARIA comboboxes one at a time: each opens its own list, and two open lists would mix rows. */
 export async function fillComboboxes(targets: FieldTarget[], profile: Profile): Promise<number> {
   let filled = 0;
   for (const t of targets) {
+    if (t.kind === "choiceAnswer" && t.control.type === "combobox") {
+      filled += await fillSavedChoice(t, t.control.element);
+      continue;
+    }
     if (t.kind !== "combobox" || !isComboboxEmpty(t.element)) continue;
     let outcome: string;
     try {

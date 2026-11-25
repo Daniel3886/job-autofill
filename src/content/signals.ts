@@ -59,16 +59,22 @@ export function ownLabelText(label: HTMLElement, control?: Element): string {
   return copy.textContent ?? "";
 }
 
-function labelText(el: HTMLElement): string {
-  const labels = (el as HTMLInputElement).labels;
-  const texts = [...(labels ?? [])].map((l) => ownLabelText(l, el));
-  const labelledBy = el.getAttribute("aria-labelledby");
-  if (labelledBy) {
-    for (const id of labelledBy.split(/\s+/)) {
-      texts.push(byIdNear(el, id)?.textContent ?? "");
-    }
+/**
+ * The texts of a control's labels: its <label>s and the elements aria-labelledby names, each once
+ * (forms often point both at the same label, which would read "Gender Gender").
+ */
+function labelTexts(el: HTMLElement): string[] {
+  const labels = [...((el as HTMLInputElement).labels ?? [])];
+  const texts = labels.map((l) => ownLabelText(l, el));
+  for (const id of (el.getAttribute("aria-labelledby") ?? "").split(/\s+/).filter(Boolean)) {
+    const named = byIdNear(el, id);
+    if (named && !labels.includes(named as HTMLLabelElement)) texts.push(named.textContent ?? "");
   }
-  return normalize(texts.join(" "));
+  return texts;
+}
+
+function labelText(el: HTMLElement): string {
+  return normalize(labelTexts(el).join(" "));
 }
 
 const MAX_NEARBY_TEXT = 120;
@@ -97,11 +103,7 @@ export function cleanQuestion(text: string): string {
 }
 
 export function rawQuestionText(el: HTMLElement): string {
-  const labels = [...((el as HTMLInputElement).labels ?? [])].map((l) => ownLabelText(l, el));
-  const labelledBy = el.getAttribute("aria-labelledby");
-  if (labelledBy) {
-    for (const id of labelledBy.split(/\s+/)) labels.push(byIdNear(el, id)?.textContent ?? "");
-  }
+  const labels = labelTexts(el);
   const text =
     labels.join(" ").trim() ||
     (el.getAttribute("aria-label") ?? "").trim() ||

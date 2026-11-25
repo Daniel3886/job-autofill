@@ -6,7 +6,7 @@ function targetIds(html: string, checkVisibility = false): string[] {
   document.body.innerHTML = html;
   return collectTargets(document, checkVisibility).flatMap((t) => {
     if (t.kind === "radio") return [t.radios[0].name];
-    if (t.kind === "answer") return [];
+    if (t.kind === "answer" || t.kind === "choiceAnswer") return [];
     return [t.element.id];
   });
 }

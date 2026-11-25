@@ -43,10 +43,10 @@ A choice is filled only when exactly one option on the page matches your answer.
 For questions the extension does not know (e.g. "Czy znasz Dockera i OpenShift?"), save your own answer:
 
 1. On the job form, right-click the extension icon and choose **Pick a field and save an answer**, or press **Alt+Shift+I** (**Option+Shift+I** on a Mac) (change it at `chrome://extensions/shortcuts`).
-2. Click a text field. A panel shows the field's question (editable) and an answer box.
+2. Click the field: a text box, a dropdown, one option of a radio group (or its label), or a custom dropdown such as react-select. A panel shows the field's question (editable) and an answer box. For a dropdown or radio group, the answer box lists the field's own options to choose from.
 3. **Save and fill** stores the answer and fills the field. Esc cancels.
 
-From then on, one click fills any field whose question matches, ignoring case, Polish letters and punctuation. A saved answer never replaces a value from your profile: on a field your profile fills, such as your name or email, the profile wins. A saved answer fills it only while that profile field is empty. Saved answers are listed, editable and removable on the profile page.
+From then on, one click fills any field whose question matches, ignoring case, Polish letters and punctuation. For a dropdown or radio group, the option whose text is the saved answer is chosen, and only when exactly one option has that text ("Yes" on "Are you legally authorised to work in India?"). Otherwise the question is left for you, and the page console says why. A saved answer never replaces a value from your profile: on a field your profile fills, such as your name, email or work mode, the profile wins. A saved answer fills it only while the profile leaves it empty, and never changes a field that already has an answer. Saved answers are listed, editable and removable on the profile page.
 
 ## Languages of job forms
 

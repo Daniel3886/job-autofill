@@ -2,6 +2,7 @@ import { CONSENT_SETTING, getFieldText, getLanguages, getList, getText, type Pro
 import { storedToFile, type StoredFile } from "../shared/files";
 import { TARGET_ATTR, type SelectizeInfo, type SelectizeSetItem } from "../shared/messages";
 import type { FieldTarget } from "./adapters/types";
+import { matchSavedOption } from "./choiceControls";
 import { CHOICE_RULE_BY_ID } from "./choices/choiceRules";
 import { LANGUAGE_LEVEL_RULE, pickOnLevelScale } from "./choices/languages";
 import { isPlaceField, matchPlaceOption } from "./choices/places";
@@ -44,10 +45,13 @@ export async function planFills(
   const actions: FillAction[] = [];
   const selectized: { tag: string; target: Extract<FieldTarget, { kind: "select" }> }[] = [];
   const answers: Extract<FieldTarget, { kind: "answer" }>[] = [];
+  const choiceAnswers: Extract<FieldTarget, { kind: "choiceAnswer" }>[] = [];
 
   for (const t of targets) {
     if (t.kind === "answer") {
       answers.push(t);
+    } else if (t.kind === "choiceAnswer") {
+      choiceAnswers.push(t);
     } else if (t.kind === "text") {
       const value = t.fieldId === "salary" ? salaryText(t.question, profile) : getFieldText(profile, t.fieldId);
       if (value) actions.push({ kind: "text", element: t.element, value });
@@ -102,7 +106,41 @@ export async function planFills(
     actions.push({ kind: "text", element: t.element, value: t.value });
   }
 
+  actions.push(...planChoiceAnswers(choiceAnswers, actions));
   return actions;
+}
+
+/**
+ * Saved answers for selects and radio groups. The profile wins on a control it fills; otherwise
+ * the option whose text is the saved answer is chosen, when exactly one is. Comboboxes are
+ * opened later, by fillComboboxes.
+ */
+function planChoiceAnswers(answers: Extract<FieldTarget, { kind: "choiceAnswer" }>[], profileActions: FillAction[]): FillAction[] {
+  const byProfile = new Set<Element>(
+    profileActions.flatMap((a) => (a.kind === "select" || a.kind === "radio" ? [a.element] : [])),
+  );
+  const planned: FillAction[] = [];
+  for (const t of answers) {
+    const { control } = t;
+    if (control.type === "combobox") continue;
+    const elements = control.type === "select" ? [control.element] : control.radios;
+    if (elements.some((el) => byProfile.has(el))) {
+      console.info(`Job Autofill: saved answer for "${t.question}" skipped, the profile fills this field`);
+      continue;
+    }
+    const texts = control.type === "select" ? readNativeOptions(control.element).map((o) => o.text) : control.radios.map(radioLabel);
+    const index = matchSavedOption(t.value, texts);
+    if (index === null) {
+      console.info(`Job Autofill: saved answer for "${t.question}" not used: no single option is "${t.value}"`);
+      continue;
+    }
+    if (control.type === "select") {
+      planned.push({ kind: "select", element: control.element, values: [readNativeOptions(control.element)[index].value] });
+    } else {
+      planned.push({ kind: "radio", element: control.radios[index] });
+    }
+  }
+  return planned;
 }
 
 export async function executeActions(actions: FillAction[], bridge: MainWorldBridge): Promise<number> {

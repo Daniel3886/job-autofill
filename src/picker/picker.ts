@@ -1,3 +1,12 @@
+import {
+  anchorOf,
+  choiceControlAt,
+  choiceQuestion,
+  chooseByText,
+  chosenText,
+  readChoiceTexts,
+  type ChoiceControl,
+} from "../content/choiceControls";
 import { fillSearchBox, searchBoxSpec } from "../content/drivers/searchBox";
 import { isTextLike, setTextValue } from "../content/drivers/text";
 import { rawQuestionText, type TextLike } from "../content/signals";
@@ -7,7 +16,20 @@ export interface PickerDeps {
   onStop?(): void;
 }
 
+type Picked = { kind: "text"; el: TextLike } | { kind: "choice"; control: ChoiceControl };
+
+/** What a click on `target` would pick. A choice control comes first: a combobox input is also text-like. */
+function pickableAt(target: EventTarget | null): Picked | null {
+  const control = choiceControlAt(target);
+  if (control) return { kind: "choice", control };
+  return isTextLike(target) ? { kind: "text", el: target } : null;
+}
+
+const anchor = (picked: Picked): HTMLElement => (picked.kind === "text" ? picked.el : anchorOf(picked.control));
+
 export const HOST_ID = "job-autofill-picker";
+
+const BANNER = "Click a field (text box, dropdown or choice) to save an answer for it. <kbd>Esc</kbd> cancels.";
 
 const CSS = `
   :host { all: initial; }
@@ -65,7 +87,7 @@ export function startPicker(doc: Document, deps: PickerDeps): () => void {
   root.innerHTML = `
     <style>${CSS}</style>
     <div class="ui">
-      <div class="banner" role="status">Click a text field to save an answer for it. <kbd>Esc</kbd> cancels.</div>
+      <div class="banner" role="status">${BANNER}</div>
       <div class="highlight" hidden></div>
     </div>`;
   doc.documentElement.append(host);
@@ -73,9 +95,11 @@ export function startPicker(doc: Document, deps: PickerDeps): () => void {
   const ui = root.querySelector<HTMLDivElement>(".ui")!;
   const banner = root.querySelector<HTMLDivElement>(".banner")!;
   const highlight = root.querySelector<HTMLDivElement>(".highlight")!;
-  let hovered: TextLike | null = null;
+  let hovered: HTMLElement | null = null;
   let panel: HTMLFormElement | null = null;
   let stopped = false;
+  // True while the picker itself opens a dropdown or clicks an option: those clicks are not the user's.
+  let busy = false;
 
   const isOurs = (e: Event) => e.composedPath().includes(host);
 
@@ -91,18 +115,21 @@ export function startPicker(doc: Document, deps: PickerDeps): () => void {
   }
 
   function onMove(e: MouseEvent) {
-    if (panel || isOurs(e)) return;
-    hovered = isTextLike(e.target) ? e.target : null;
+    if (busy || panel || isOurs(e)) return;
+    const picked = pickableAt(e.target);
+    hovered = picked ? anchor(picked) : null;
     if (hovered) place(hovered);
     else highlight.hidden = true;
   }
 
   function onClick(e: MouseEvent) {
-    if (isOurs(e)) return;
+    if (busy || isOurs(e)) return;
     e.preventDefault();
     e.stopPropagation();
-    if (panel || !isTextLike(e.target)) return;
-    openPanel(e.target);
+    const picked = pickableAt(e.target);
+    if (panel || !picked) return;
+    if (picked.kind === "text") openPanel(picked.el);
+    else void openChoicePanel(picked.control);
   }
 
   function onKey(e: KeyboardEvent) {
@@ -117,7 +144,83 @@ export function startPicker(doc: Document, deps: PickerDeps): () => void {
     if (el) place(el);
   }
 
-  let panelTarget: TextLike | null = null;
+  let panelTarget: HTMLElement | null = null;
+
+  function showError(error: HTMLElement, text: string) {
+    error.textContent = text;
+    error.hidden = false;
+  }
+
+  /** A select, radio group or combobox: the answer is one of its options, chosen from a list. */
+  async function openChoicePanel(control: ChoiceControl) {
+    const el = anchorOf(control);
+    panelTarget = el;
+    place(el);
+    busy = true;
+    let texts: string[];
+    try {
+      texts = await readChoiceTexts(control);
+    } finally {
+      busy = false;
+    }
+    banner.textContent = "Choose the answer for this question.";
+
+    panel = doc.createElement("form");
+    panel.className = "panel";
+    panel.innerHTML = `
+      <h2>Save an answer</h2>
+      <label>Question
+        <textarea name="question" rows="2"></textarea>
+      </label>
+      <p class="hint">Filled in from the field's label. Edit it if it's wrong. This is what autofill looks for.</p>
+      <label>Answer
+        <select name="answer"></select>
+      </label>
+      <p class="error" hidden></p>
+      <div class="actions">
+        <button type="button" class="secondary" data-action="cancel">Cancel</button>
+        <button type="submit" class="primary">Save and fill</button>
+      </div>`;
+    ui.append(panel);
+
+    const question = panel.querySelector<HTMLTextAreaElement>('[name="question"]')!;
+    const answer = panel.querySelector<HTMLSelectElement>('[name="answer"]')!;
+    const error = panel.querySelector<HTMLParagraphElement>(".error")!;
+    question.value = choiceQuestion(control);
+    answer.append(new Option("Choose an answer", ""));
+    for (const text of texts) answer.append(new Option(text, text));
+    answer.value = texts.includes(chosenText(control)) ? chosenText(control) : "";
+    if (texts.length === 0) showError(error, "This field shows no options to choose from.");
+    positionPanel(panel, el);
+
+    panel.querySelector('[data-action="cancel"]')!.addEventListener("click", closePanel);
+    panel.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const q = question.value.replace(/\s+/g, " ").trim();
+      const a = answer.value;
+      if (!q) return showError(error, "Add the question this answer belongs to.");
+      if (!a) return showError(error, "Choose the answer to save.");
+      try {
+        await deps.saveAnswer(q, a);
+      } catch {
+        return showError(error, "Could not save the answer. Try again.");
+      }
+      panel?.remove();
+      panel = null;
+      busy = true;
+      let why: string;
+      try {
+        why = await chooseByText(control, a, { replace: true });
+      } finally {
+        busy = false;
+      }
+      banner.textContent = why
+        ? `Saved, but ${why}. Choose it yourself.`
+        : "Saved. Autofill will choose this answer from now on.";
+      setTimeout(stop, 1500);
+    });
+    (answer.value ? question : answer).focus();
+  }
 
   function openPanel(el: TextLike) {
     panelTarget = el;
@@ -154,16 +257,12 @@ export function startPicker(doc: Document, deps: PickerDeps): () => void {
       e.preventDefault();
       const q = question.value.replace(/\s+/g, " ").trim();
       const a = answer.value;
-      const showError = (text: string) => {
-        error.textContent = text;
-        error.hidden = false;
-      };
-      if (!q) return showError("Add the question this answer belongs to.");
-      if (!a.trim()) return showError("Type the answer to save.");
+      if (!q) return showError(error, "Add the question this answer belongs to.");
+      if (!a.trim()) return showError(error, "Type the answer to save.");
       try {
         await deps.saveAnswer(q, a);
       } catch {
-        return showError("Could not save the answer. Try again.");
+        return showError(error, "Could not save the answer. Try again.");
       }
       panel?.remove();
       panel = null;
@@ -203,7 +302,7 @@ export function startPicker(doc: Document, deps: PickerDeps): () => void {
     panel = null;
     panelTarget = null;
     highlight.hidden = true;
-    banner.innerHTML = "Click a text field to save an answer for it. <kbd>Esc</kbd> cancels.";
+    banner.innerHTML = BANNER;
   }
 
   function stop() {
