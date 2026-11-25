@@ -72,6 +72,11 @@
     "below": ["poniżej", "do"],
     "above": ["powyżej", "od"]
   },
+  "levelScale": {
+    "steps": ["brak", "brak znajomości", "początkujący", "podstawowy", "podstawowa", "komunikatywny", "komunikatywna", "średniozaawansowany", "średnio zaawansowany", "dobry", "dobra", "bardzo dobry", "bardzo dobra", "zaawansowany", "zaawansowana", "biegły", "biegła", "ojczysty", "natywny"],
+    "lowest": ["brak", "brak znajomości", "początkujący", "podstawowy", "podstawowa"],
+    "highest": ["ojczysty", "natywny", "biegły", "biegła"]
+  },
   "startDate": ["data rozpoczęcia", "data rozpoczęcia pracy", "dostępny od", "dostępna od", "dostępność od", "data dostępności", "od kiedy możesz zacząć"],
   "cv": {
     "keywords": ["życiorys"],

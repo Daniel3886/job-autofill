@@ -14,6 +14,7 @@ export interface Locale {
   places?: string[][];
   placePrefixes?: string[];
   startDate?: string[];
+  levelScale?: { steps?: string[]; lowest?: string[]; highest?: string[] };
 }
 
 export const LOCALES: Locale[] = [en, pl];

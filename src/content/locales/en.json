@@ -76,6 +76,11 @@
     "below": ["below", "under", "less than", "up to"],
     "above": ["above", "over", "more than", "from"]
   },
+  "levelScale": {
+    "steps": ["none", "no knowledge", "beginner", "basic", "elementary", "limited", "communicative", "conversational", "intermediate", "good", "upper intermediate", "very good", "advanced", "professional", "fluent", "proficient", "excellent", "native", "mother tongue", "bilingual"],
+    "lowest": ["none", "no knowledge", "beginner", "basic", "elementary"],
+    "highest": ["native", "mother tongue", "bilingual", "fluent", "proficient", "excellent"]
+  },
   "startDate": ["start date", "earliest start date", "available from", "availability date", "date available", "when can you start"],
   "cv": {
     "keywords": ["cv", "resume", "curriculum vitae"],

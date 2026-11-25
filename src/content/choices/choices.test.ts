@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Profile, SalaryExpectation } from "../../shared/profile";
 import { CHOICE_RULE_BY_ID, classifyQuestion } from "./choiceRules";
-import { LANGUAGE_LEVEL_RULE } from "./languages";
+import { LANGUAGE_LEVEL_RULE, pickOnLevelScale } from "./languages";
 import { chooseChoiceOptions } from "./optionMatch";
 import { matchSalaryOption, parseSalaryRange, salaryFor } from "./salary";
 import { normalize } from "../text";
@@ -87,6 +87,27 @@ describe("chooseChoiceOptions", () => {
   it("matches native speakers to a native option, or to C2 when there is none", () => {
     expect(chooseChoiceOptions(LANGUAGE_LEVEL_RULE, ["native"], opts(["B2", "C1", "Ojczysty"]), false)).toEqual(["2"]);
     expect(chooseChoiceOptions(LANGUAGE_LEVEL_RULE, ["native"], opts(["B2", "C1", "C2"]), false)).toEqual(["2"]);
+  });
+
+  it("places a level on a scale without CEFR codes: C1/C2 one below the top, B2 the step below", () => {
+    const scale = opts(["Wybierz", "Brak", "Podstawowy", "Komunikatywny", "Dobry", "Biegły", "Ojczysty"]);
+    expect(pickOnLevelScale("C1", scale)?.text).toBe("Biegły");
+    expect(pickOnLevelScale("C2", scale)?.text).toBe("Biegły");
+    expect(pickOnLevelScale("B2", scale)?.text).toBe("Dobry");
+    expect(pickOnLevelScale("native", scale)?.text).toBe("Ojczysty");
+  });
+
+  it("reads a scale listed from the top down", () => {
+    const scale = opts(["Native", "Fluent", "Very good", "Good", "Basic"]);
+    expect(pickOnLevelScale("C1", scale)?.text).toBe("Fluent");
+    expect(pickOnLevelScale("B1", scale)?.text).toBe("Good");
+  });
+
+  it("leaves lists that are not a known scale, are too short, or have no clear direction", () => {
+    expect(pickOnLevelScale("C1", opts(["Yes", "No", "Maybe", "Fluent"]))).toBeNull();
+    expect(pickOnLevelScale("C1", opts(["Basic", "Good", "Fluent"]))).toBeNull();
+    expect(pickOnLevelScale("C1", opts(["Good", "Basic", "Fluent", "Communicative"]))).toBeNull();
+    expect(pickOnLevelScale("A1", opts(["Good", "Very good", "Fluent", "Native"]))).toBeNull();
   });
 
   it("returns null when the answer is not set", () => {

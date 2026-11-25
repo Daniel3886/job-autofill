@@ -3,7 +3,7 @@ import { storedToFile, type StoredFile } from "../shared/files";
 import { TARGET_ATTR, type SelectizeInfo, type SelectizeSetItem } from "../shared/messages";
 import type { FieldTarget } from "./adapters/types";
 import { CHOICE_RULE_BY_ID } from "./choices/choiceRules";
-import { LANGUAGE_LEVEL_RULE } from "./choices/languages";
+import { LANGUAGE_LEVEL_RULE, pickOnLevelScale } from "./choices/languages";
 import { isPlaceField, matchPlaceOption } from "./choices/places";
 import { chooseChoiceOptions, type ChoiceOption } from "./choices/optionMatch";
 import { matchSalaryOption, salaryAmount, salaryText } from "./choices/salary";
@@ -126,7 +126,15 @@ function choose(t: Exclude<FieldTarget, { kind: "answer" | "date" }>, options: C
   if (t.fieldId.startsWith("language:")) {
     const code = t.fieldId.slice("language:".length);
     const level = getLanguages(profile).find((l) => l.language === code)?.level;
-    return level ? chooseChoiceOptions(LANGUAGE_LEVEL_RULE, [level], options, multiple) : null;
+    if (!level) return null;
+    const direct = chooseChoiceOptions(LANGUAGE_LEVEL_RULE, [level], options, multiple);
+    if (direct) return direct;
+    const onScale = pickOnLevelScale(level, options);
+    if (onScale) {
+      console.info(`Job Autofill: "${t.question}" has no CEFR levels; picked "${onScale.text.trim()}" for ${level} on its scale`);
+      return [onScale.value];
+    }
+    return null;
   }
   if (isPlaceField(t.fieldId)) {
     const option = matchPlaceOption(getText(profile, t.fieldId), options, t.fieldId);

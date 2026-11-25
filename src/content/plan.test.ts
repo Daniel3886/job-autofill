@@ -417,6 +417,23 @@ describe("masked inputs", () => {
   });
 });
 
+describe("language scales without CEFR codes", () => {
+  it("fills a level select from the profile's CEFR level and says so in the console", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    await fill(`
+      <label for="en">Znajomość języka angielskiego</label>
+      <select id="en"><option value="">Wybierz</option><option value="1">Podstawowy</option><option value="2">Komunikatywny</option>
+        <option value="3">Dobry</option><option value="4">Biegły</option><option value="5">Ojczysty</option></select>
+      <label for="de">Znajomość języka niemieckiego</label>
+      <select id="de"><option value="">Wybierz</option><option value="1">Podstawowy</option><option value="2">Komunikatywny</option>
+        <option value="3">Dobry</option><option value="4">Biegły</option><option value="5">Ojczysty</option></select>`);
+    expect($<HTMLSelectElement>("#en").value).toBe("4");
+    expect($<HTMLSelectElement>("#de").value).toBe("2");
+    expect(info).toHaveBeenCalledWith(expect.stringContaining('picked "Biegły" for C1'));
+    info.mockRestore();
+  });
+});
+
 describe("full name", () => {
   it("fills a full-name box with the first and last name", async () => {
     await fill(`<label for="n">Imię i nazwisko *</label><input id="n">`);
