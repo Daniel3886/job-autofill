@@ -133,6 +133,9 @@ export const CHOICE_FIELDS: ChoiceField[] = [
   },
 ];
 
+/** Profile value "yes" lets a fill tick required data-processing consents. Off unless the user turns it on. */
+export const CONSENT_SETTING = "tickRequiredConsent";
+
 export function emptyProfile(): Profile {
   return { version: 1, values: {} };
 }
@@ -140,6 +143,14 @@ export function emptyProfile(): Profile {
 export function getText(profile: Profile, id: string): string {
   const v = profile.values[id];
   return typeof v === "string" ? v.trim() : "";
+}
+
+/** A text value the form asks for, including ones built from the profile ("Daniel Kowalski"). */
+export function getFieldText(profile: Profile, id: string): string {
+  if (id !== "fullName") return getText(profile, id);
+  const first = getText(profile, "firstName");
+  const last = getText(profile, "lastName");
+  return first && last ? `${first} ${last}` : "";
 }
 
 export function getList(profile: Profile, id: string): string[] {

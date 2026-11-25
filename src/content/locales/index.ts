@@ -3,7 +3,7 @@ import en from "./en.json";
 import pl from "./pl.json";
 
 export interface Locale {
-  fields?: Record<string, { labels?: string[]; attributes?: string[] }>;
+  fields?: Record<string, { labels?: string[]; attributes?: string[]; exact?: string[] }>;
   questions?: Record<string, string[]>;
   options?: Record<string, Record<string, string[][]>>;
   languages?: Record<string, string[]>;
@@ -13,6 +13,9 @@ export interface Locale {
   cv?: { keywords?: string[]; otherDocuments?: string[] };
   places?: string[][];
   placePrefixes?: string[];
+  startDate?: string[];
+  levelScale?: { steps?: string[]; lowest?: string[]; highest?: string[] };
+  consent?: { dataProcessing?: string[]; terms?: string[]; required?: string[]; never?: string[] };
 }
 
 export const LOCALES: Locale[] = [en, pl];

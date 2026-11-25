@@ -1,5 +1,6 @@
 {
   "fields": {
+    "fullName": { "labels": ["full name", "first and last name", "first name and last name", "name and surname"], "attributes": ["fullname"], "exact": ["name", "your name"] },
     "firstName": { "labels": ["first name", "given name", "forename"], "attributes": ["fname", "firstname", "givenname"] },
     "lastName": { "labels": ["last name", "surname", "family name"], "attributes": ["lname", "lastname", "familyname"] },
     "email": { "labels": ["email", "e-mail", "mail"] },
@@ -75,6 +76,18 @@
     "below": ["below", "under", "less than", "up to"],
     "above": ["above", "over", "more than", "from"]
   },
+  "levelScale": {
+    "steps": ["none", "no knowledge", "beginner", "basic", "elementary", "limited", "communicative", "conversational", "intermediate", "good", "upper intermediate", "very good", "advanced", "professional", "fluent", "proficient", "excellent", "native", "mother tongue", "bilingual"],
+    "lowest": ["none", "no knowledge", "beginner", "basic", "elementary"],
+    "highest": ["native", "mother tongue", "bilingual", "fluent", "proficient", "excellent"]
+  },
+  "consent": {
+    "dataProcessing": ["processing of my personal data", "process my personal data", "processing my personal data", "processing of personal data", "personal data processing", "privacy policy", "privacy notice", "gdpr"],
+    "terms": ["terms of service", "terms of use", "terms and conditions", "terms conditions", "terms & conditions", "general terms", "privacy notice"],
+    "required": ["required", "mandatory"],
+    "never": ["future recruitment", "future recruitments", "future opportunities", "future positions", "future roles", "other positions", "talent pool", "talent community", "talent network", "newsletter", "marketing", "commercial", "job alert", "job alerts", "stay in touch", "partners", "third parties"]
+  },
+  "startDate": ["start date", "earliest start date", "available from", "availability date", "date available", "when can you start"],
   "cv": {
     "keywords": ["cv", "resume", "curriculum vitae"],
     "otherDocuments": ["cover letter", "motivation letter", "portfolio", "certificate"]

@@ -29,7 +29,11 @@ function unique(names: string[]): string[] {
   });
 }
 
-export function chooseLocation(names: string[], options: LocationOption[]): LocationOption | null {
+/**
+ * `allowLoneResult`: Traffit's search returns only places in the chosen country, so its one
+ * result is the city. A general autocomplete can return one unrelated place, so it passes false.
+ */
+export function chooseLocation(names: string[], options: LocationOption[], allowLoneResult = true): LocationOption | null {
   const named = options.filter((o) => o.value !== "").map((o) => ({ option: o, text: normalize(o.text) }));
 
   for (const q of names.map(normalize).filter(Boolean)) {
@@ -42,7 +46,7 @@ export function chooseLocation(names: string[], options: LocationOption[]): Loca
     const hits = named.filter((n) => normalize(n.option.text.split(/[,(]/)[0]) === q);
     if (hits.length === 1) return hits[0].option;
   }
-  return named.length === 1 ? named[0].option : null;
+  return allowLoneResult && named.length === 1 ? named[0].option : null;
 }
 
 export async function fillLocations(targets: FieldTarget[], profile: Profile, bridge: MainWorldBridge): Promise<number> {

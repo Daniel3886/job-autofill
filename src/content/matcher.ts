@@ -27,9 +27,9 @@ export function scoreField(s: InputSignals, rule: FieldRule): number {
   if (rule.inputTypes.includes(s.type)) score += WEIGHTS.inputType;
 
   const hit = (text: string) => rule.keywords.some((k) => containsPhrase(text, k));
-  if (hit(s.label)) score += WEIGHTS.label;
-  if (hit(s.ariaLabel)) score += WEIGHTS.ariaLabel;
-  if (hit(s.placeholder)) score += WEIGHTS.placeholder;
+  if (hit(s.label) || rule.exactLabels?.includes(s.label)) score += WEIGHTS.label;
+  if (hit(s.ariaLabel) || rule.exactLabels?.includes(s.ariaLabel)) score += WEIGHTS.ariaLabel;
+  if (hit(s.placeholder) || rule.exactLabels?.includes(s.placeholder)) score += WEIGHTS.placeholder;
   if (hit(s.nearbyText)) score += WEIGHTS.nearbyText;
   if (hit(s.attrs) || rule.attrKeywords.some((k) => containsPhrase(s.attrs, k))) {
     score += WEIGHTS.attrs;
@@ -42,9 +42,12 @@ export function matchInputs(inputs: TextLike[], rules: FieldRule[] = FIELD_RULES
   for (const element of inputs) {
     const signals = readSignals(element);
     const question = signalsQuestion(signals);
-    for (const rule of rules) {
-      const score = scoreField(signals, rule);
-      if (score >= MIN_SCORE) candidates.push({ element, fieldId: rule.id, score, question });
+    const scored = rules
+      .map((rule) => ({ rule, score: scoreField(signals, rule) }))
+      .filter(({ score }) => score >= MIN_SCORE);
+    const ruledOut = new Set(scored.flatMap(({ rule }) => rule.supersedes ?? []));
+    for (const { rule, score } of scored) {
+      if (!ruledOut.has(rule.id)) candidates.push({ element, fieldId: rule.id, score, question });
     }
   }
   candidates.sort((a, b) => b.score - a.score);

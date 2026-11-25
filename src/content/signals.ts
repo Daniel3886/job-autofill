@@ -1,3 +1,4 @@
+import { byIdNear } from "./dom";
 import { normalize } from "./text";
 
 export type TextLike = HTMLInputElement | HTMLTextAreaElement;
@@ -37,16 +38,43 @@ export function questionText(el: HTMLSelectElement | HTMLElement): string {
   return normalize(findNearbyText(el));
 }
 
-function labelText(el: HTMLElement): string {
-  const labels = (el as HTMLInputElement).labels;
-  const texts = [...(labels ?? [])].map((l) => l.textContent ?? "");
-  const labelledBy = el.getAttribute("aria-labelledby");
-  if (labelledBy) {
-    for (const id of labelledBy.split(/\s+/)) {
-      texts.push(el.ownerDocument.getElementById(id)?.textContent ?? "");
-    }
+const LABEL_NOISE = "input, select, textarea, option, button";
+
+/**
+ * A label's own words. A label that wraps its control also holds the control's text (a
+ * select's option list, an autocomplete's "No results" and "Loading" messages), which is not
+ * the question. When the label wraps `control`, the question is the text before it.
+ */
+export function ownLabelText(label: HTMLElement, control?: Element): string {
+  if (control && control !== label && label.contains(control)) {
+    const range = label.ownerDocument.createRange();
+    range.setStart(label, 0);
+    range.setEndBefore(control);
+    const before = range.toString();
+    if (before.trim()) return before;
   }
-  return normalize(texts.join(" "));
+  if (!label.querySelector(LABEL_NOISE)) return label.textContent ?? "";
+  const copy = label.cloneNode(true) as HTMLElement;
+  for (const noise of copy.querySelectorAll(LABEL_NOISE)) noise.remove();
+  return copy.textContent ?? "";
+}
+
+/**
+ * The texts of a control's labels: its <label>s and the elements aria-labelledby names, each once
+ * (forms often point both at the same label, which would read "Gender Gender").
+ */
+function labelTexts(el: HTMLElement): string[] {
+  const labels = [...((el as HTMLInputElement).labels ?? [])];
+  const texts = labels.map((l) => ownLabelText(l, el));
+  for (const id of (el.getAttribute("aria-labelledby") ?? "").split(/\s+/).filter(Boolean)) {
+    const named = byIdNear(el, id);
+    if (named && !labels.includes(named as HTMLLabelElement)) texts.push(named.textContent ?? "");
+  }
+  return texts;
+}
+
+function labelText(el: HTMLElement): string {
+  return normalize(labelTexts(el).join(" "));
 }
 
 const MAX_NEARBY_TEXT = 120;
@@ -71,15 +99,11 @@ export function findNearbyText(el: HTMLElement): string {
 }
 
 export function cleanQuestion(text: string): string {
-  return text.replace(/\s+/g, " ").replace(/[\s*:]+$/, "").trim();
+  return text.replace(/\s+/g, " ").replace(/[\s*✱:]+$/, "").trim();
 }
 
 export function rawQuestionText(el: HTMLElement): string {
-  const labels = [...((el as HTMLInputElement).labels ?? [])].map((l) => l.textContent ?? "");
-  const labelledBy = el.getAttribute("aria-labelledby");
-  if (labelledBy) {
-    for (const id of labelledBy.split(/\s+/)) labels.push(el.ownerDocument.getElementById(id)?.textContent ?? "");
-  }
+  const labels = labelTexts(el);
   const text =
     labels.join(" ").trim() ||
     (el.getAttribute("aria-label") ?? "").trim() ||

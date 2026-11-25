@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="pl">
+  <head><meta charset="utf-8"><title>Formularz aplikacyjny</title></head>
+  <body>
+    <form>
+      <label for="name">Imię i nazwisko *</label><input id="name" name="fullname">
+      <label for="email">Adres e-mail</label><input id="email" name="email" type="email">
+      <label for="phone">Telefon</label><input id="phone" name="phone" type="tel" value="+48 ___ ___ ___">
+      <label for="trap">Email</label>
+      <input id="trap" name="fake_email" type="email" autocomplete="email" tabindex="-1" style="position:absolute;left:-9999px">
+      <label for="city">Miasto</label><input id="city" name="city" value="Kraków">
+      <label for="country">Kraj</label>
+      <select id="country" name="country">
+        <option value="">Wybierz</option><option value="DE">Niemcy</option><option value="PL">Polska</option>
+      </select>
+      <label for="start">Data rozpoczęcia</label><input id="start" name="start" type="date">
+      <label><input id="rodo" type="checkbox" required> Wyrażam zgodę na przetwarzanie moich danych osobowych w celu rekrutacji.</label>
+      <label><input id="regulamin" type="checkbox" required> Zapoznałem się z regulaminem i akceptuję jego treść.</label>
+      <label><input id="future" type="checkbox"> Wyrażam zgodę na przetwarzanie moich danych osobowych w przyszłych rekrutacjach.</label>
+    </form>
+  </body>
+</html>

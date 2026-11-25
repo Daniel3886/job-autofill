@@ -37,6 +37,12 @@
         "default": "Alt+Shift+I"
       },
       "description": "Pick a field and save an answer for it"
+    },
+    "next-profile": {
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      },
+      "description": "Switch to the next candidate profile"
     }
   }
 }

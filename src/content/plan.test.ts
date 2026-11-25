@@ -294,9 +294,25 @@ describe("province and country dropdowns", () => {
     expect($<HTMLSelectElement>("#k").value).toBe("PL");
   });
 
-  it("leaves the dropdown alone when no option has the saved name", async () => {
-    await fill(PLACES, { version: 1, values: { region: "Mazovia", country: "Poland" } });
+  it("leaves a province dropdown alone when no option has the saved name", async () => {
+    await fill(PLACES, { version: 1, values: { region: "Mazovia", country: "Atlantis" } });
     expect($<HTMLSelectElement>("#w").value).toBe("");
+    expect($<HTMLSelectElement>("#k").value).toBe("");
+  });
+
+  it("finds the saved country under its name in the form's language", async () => {
+    await fill(PLACES, { version: 1, values: { country: "Poland" } });
+    expect($<HTMLSelectElement>("#k").value).toBe("PL");
+    await fill(PLACES, { version: 1, values: { country: "Deutschland" } });
+    expect($<HTMLSelectElement>("#k").value).toBe("DE");
+  });
+
+  it("leaves the country alone when two options name the same country", async () => {
+    await fill(
+      `<label for="k">Country</label>
+      <select id="k"><option value="">--</option><option value="1">Polska</option><option value="2">Poland</option></select>`,
+      { version: 1, values: { country: "Polen" } },
+    );
     expect($<HTMLSelectElement>("#k").value).toBe("");
   });
 
@@ -363,6 +379,73 @@ describe("generic adapter", () => {
     const bridge = noMainWorld();
     const actions = await planFills(collectTargets(document, false), PROFILE, bridge);
     expect(actions.some((a) => a.kind === "radio")).toBe(false);
+  });
+});
+
+describe("labels that wrap their control", () => {
+  it("reads the question without the option texts inside the label", async () => {
+    await fill(`
+      <label>Forma współpracy
+        <select id="c">
+          <option value="">Wybierz</option>
+          <option value="1">Umowa o pracę</option>
+          <option value="2">B2B (salary negotiable)</option>
+        </select>
+      </label>`);
+    expect($<HTMLSelectElement>("#c").value).toBe("2");
+  });
+});
+
+describe("masked inputs", () => {
+  it("fills a phone box that shows only its mask or its dialling code", async () => {
+    await fill(`
+      <label for="p">Telefon</label><input id="p" type="tel" value="+48 ___ ___ ___">`);
+    expect($<HTMLInputElement>("#p").value).toBe("123456789");
+  });
+
+  it("fills a box holding only mask blanks", async () => {
+    await fill(`<label for="p">Phone</label><input id="p" value="(___) ___-____">`);
+    expect($<HTMLInputElement>("#p").value).toBe("123456789");
+  });
+
+  it("leaves a phone number someone typed, even a partial one", async () => {
+    await fill(`
+      <label for="a">Telefon</label><input id="a" type="tel" value="+48 600 ___ ___">
+      <label for="b">Email</label><input id="b" value="  ">`);
+    expect($<HTMLInputElement>("#a").value).toBe("+48 600 ___ ___");
+    expect($<HTMLInputElement>("#b").value).toBe("  ");
+  });
+});
+
+describe("language scales without CEFR codes", () => {
+  it("fills a level select from the profile's CEFR level and says so in the console", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    await fill(`
+      <label for="en">Znajomość języka angielskiego</label>
+      <select id="en"><option value="">Wybierz</option><option value="1">Podstawowy</option><option value="2">Komunikatywny</option>
+        <option value="3">Dobry</option><option value="4">Biegły</option><option value="5">Ojczysty</option></select>
+      <label for="de">Znajomość języka niemieckiego</label>
+      <select id="de"><option value="">Wybierz</option><option value="1">Podstawowy</option><option value="2">Komunikatywny</option>
+        <option value="3">Dobry</option><option value="4">Biegły</option><option value="5">Ojczysty</option></select>`);
+    expect($<HTMLSelectElement>("#en").value).toBe("4");
+    expect($<HTMLSelectElement>("#de").value).toBe("2");
+    expect(info).toHaveBeenCalledWith(expect.stringContaining('picked "Biegły" for C1'));
+    info.mockRestore();
+  });
+});
+
+describe("full name", () => {
+  it("fills a full-name box with the first and last name", async () => {
+    await fill(`<label for="n">Imię i nazwisko *</label><input id="n">`);
+    expect($<HTMLInputElement>("#n").value).toBe("Daniel Kowalski");
+  });
+
+  it("leaves a full-name box empty when the profile has only one of the two names", async () => {
+    await fill(`<label for="n">Full name</label><input id="n">`, {
+      ...PROFILE,
+      values: { ...PROFILE.values, lastName: "" },
+    });
+    expect($<HTMLInputElement>("#n").value).toBe("");
   });
 });
 

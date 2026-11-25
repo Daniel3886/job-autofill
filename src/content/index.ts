@@ -1,8 +1,8 @@
 import { profileStore } from "../shared/profileStore";
 import type { FillResultMessage, MainWorldRequest, SelectizeInfo } from "../shared/messages";
-import { collectTargets } from "./adapters";
-import { fillLocations } from "./location";
-import { executeActions, planFills, type FileSource, type MainWorldBridge } from "./plan";
+import { fillDocument } from "./fill";
+import type { FileSource, MainWorldBridge } from "./plan";
+import { showProgress, showReport } from "./report";
 
 const bridge: MainWorldBridge = {
   async readSelectize(targets) {
@@ -24,14 +24,21 @@ const bridge: MainWorldBridge = {
 const files: FileSource = { loadCv: () => profileStore.getCv() };
 
 async function run() {
-  const [profile, answers] = await Promise.all([profileStore.get(), profileStore.getAnswers()]);
-  const targets = collectTargets(document, true, answers);
-  const actions = await planFills(targets, profile, bridge, files);
-  const located = await fillLocations(targets, profile, bridge).catch((err) => {
-    console.warn("Job Autofill: city fill failed", err);
-    return 0;
+  const [profile, answers] = await Promise.all([profileStore.getActive(), profileStore.getAnswers()]);
+  const { filled, leftovers } = await fillDocument(document, {
+    profile,
+    answers,
+    bridge,
+    files,
+    checkVisibility: true,
+    onProgress: (message) => showProgress(message),
   });
-  const filled = located + (await executeActions(actions, bridge));
+
+  try {
+    showReport(leftovers);
+  } catch (err) {
+    console.warn("Job Autofill: could not list the fields left to fill", err);
+  }
 
   const result: FillResultMessage = { type: "fill-result", filled };
   await chrome.runtime.sendMessage(result);

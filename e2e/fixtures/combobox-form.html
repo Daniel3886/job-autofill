@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8"><title>Combobox form</title></head>
+  <body>
+    <label for="mode">Work mode</label>
+    <button id="mode" type="button" role="combobox" aria-controls="mode-list" aria-expanded="false"><span data-placeholder>Select...</span></button>
+    <label for="lang">English level</label>
+    <button id="lang" type="button" role="combobox" aria-controls="lang-list" aria-expanded="false"><span>B2</span></button>
+    <script>
+      function combobox(id, options) {
+        const button = document.getElementById(id);
+        button.addEventListener("click", () => {
+          if (document.getElementById(`${id}-list`)) return;
+          const list = document.createElement("div");
+          list.id = `${id}-list`;
+          list.setAttribute("role", "listbox");
+          for (const text of options) {
+            const row = document.createElement("div");
+            row.setAttribute("role", "option");
+            row.textContent = text;
+            row.addEventListener("click", () => {
+              button.innerHTML = `<span>${text}</span>`;
+              button.setAttribute("aria-expanded", "false");
+              list.remove();
+            });
+            list.append(row);
+          }
+          document.body.append(list);
+          button.setAttribute("aria-expanded", "true");
+        });
+      }
+      combobox("mode", ["Office", "Hybrid", "Remote"]);
+      combobox("lang", ["B1", "B2", "C1"]);
+    </script>
+  </body>
+</html>

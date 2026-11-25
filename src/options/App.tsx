@@ -3,6 +3,7 @@ import type { SavedAnswer } from "../shared/answers";
 import { CV_ACCEPT, MAX_CV_BYTES, fileToStored, formatSize, type StoredFile } from "../shared/files";
 import {
   CHOICE_FIELDS,
+  CONSENT_SETTING,
   LANGUAGES,
   LANGUAGE_LEVELS,
   LINK_FIELDS,
@@ -22,6 +23,7 @@ import {
   type SalaryExpectation,
 } from "../shared/profile";
 import { profileStore } from "../shared/profileStore";
+import { PROFILE_COUNTRY, activeProfile, isGlobalKey, mergeProfile, splitProfile, type ProfilesState } from "../shared/profiles";
 import { HOURS_PER_MONTH, convertAmount, formatAmount, parseAmount } from "../shared/salary";
 
 interface ToastMessage {
@@ -44,8 +46,35 @@ function snapshot(profile: Profile, answers: SavedAnswer[]): string {
   return JSON.stringify({ ...profile, values, answers });
 }
 
+interface EditorData {
+  state: ProfilesState;
+  editingId: string;
+  profile: Profile;
+  answers: SavedAnswer[];
+}
+
+/** The shared values and answers, merged with profile `editId` (default: the one used for filling). */
+async function readEditor(editId?: string): Promise<EditorData> {
+  const [global, state, answers] = await Promise.all([
+    profileStore.getGlobal(),
+    profileStore.getProfiles(),
+    profileStore.getAnswers(),
+  ]);
+  const candidate = state.list.find((p) => p.id === editId) ?? activeProfile(state);
+  const merged = mergeProfile(global, candidate);
+  return {
+    state,
+    editingId: candidate?.id ?? "",
+    profile: { ...merged, languages: getLanguages(merged), salaries: getSalaries(merged) },
+    answers,
+  };
+}
+
 export function App() {
+  // The merged view being edited: shared values plus the profile chosen in the profile bar.
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [profiles, setProfiles] = useState<ProfilesState | null>(null);
+  const [editingId, setEditingId] = useState("");
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -62,15 +91,32 @@ export function App() {
     toastTimer.current = window.setTimeout(() => setToast(null), kind === "success" ? 2500 : 5000);
   }, []);
 
+  const show = useCallback((data: EditorData) => {
+    setProfiles(data.state);
+    setEditingId(data.editingId);
+    setProfile(data.profile);
+    setAnswers(data.answers);
+    setSaved({ profile: data.profile, answers: data.answers });
+    setResetCount((n) => n + 1);
+  }, []);
+
+  /** Shows profile `editId` (default: the one used for filling). */
+  async function load(editId?: string) {
+    show(await readEditor(editId));
+  }
+
   useEffect(() => {
-    Promise.all([profileStore.get(), profileStore.getAnswers()])
-      .then(([p, a]) => {
-        const loaded = { ...p, languages: getLanguages(p), salaries: getSalaries(p) };
-        setProfile(loaded);
-        setAnswers(a);
-        setSaved({ profile: loaded, answers: a });
-      })
-      .catch(() => setLoadFailed(true));
+    readEditor().then(show, () => setLoadFailed(true));
+  }, [show]);
+
+  // The icon menu or the shortcut can switch the profile while this page is open.
+  useEffect(() => {
+    const onChange = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
+      const next = changes.profiles?.newValue as ProfilesState | undefined;
+      if (area === "local" && next) setProfiles(next);
+    };
+    chrome.storage.onChanged.addListener(onChange);
+    return () => chrome.storage.onChanged.removeListener(onChange);
   }, []);
 
   const dirty =
@@ -95,35 +141,124 @@ export function App() {
     setProfile((p) => (p ? { ...p, salaries } : p));
   }
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!profile) return;
+  /** Saves the shared values, the profile being edited and the answers. Returns whether it worked. */
+  async function save(): Promise<boolean> {
+    if (!profile || !profiles) return false;
+    const candidate = profiles.list.find((p) => p.id === editingId);
+    if (!candidate) return false;
     setSaving(true);
     const values = { ...profile.values };
     for (const key of ["englishLevel", ...LEGACY_SALARY_KEYS.map(([k]) => k)]) delete values[key];
     const languages = (profile.languages ?? []).filter((l) => l.level !== "");
     const salaries = (profile.salaries ?? []).filter((s) => s.amount.trim() !== "");
+    const { own } = splitProfile({ ...profile, values, languages, salaries });
     try {
       const keptAnswers = answers
         .map((a) => ({ ...a, question: a.question.replace(/\s+/g, " ").trim() }))
         .filter((a) => a.question !== "" && a.answer.trim() !== "");
-      await Promise.all([
-        profileStore.save({ ...profile, values, languages, salaries }),
-        profileStore.saveAnswers(keptAnswers),
-      ]);
+      await profileStore.saveGlobal({ ...profile, values, languages });
+      await profileStore.saveProfile({ id: candidate.id, name: candidate.name, ...own });
+      await profileStore.saveAnswers(keptAnswers);
       setAnswers(keptAnswers);
       setSaved({ profile, answers: keptAnswers });
-      showToast("success", "Profile saved");
+      showToast("success", `Profile "${candidate.name}" saved`);
+      return true;
     } catch {
       showToast("error", "Could not save your profile. Try again.");
+      return false;
     } finally {
       setSaving(false);
     }
   }
 
-  if (!profile) {
-    return <main>{loadFailed ? "Could not load your profile." : "Loading…"}</main>;
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    await save();
   }
+
+  /**
+   * Before the page shows another profile: unsaved edits are saved first, or the switch is
+   * cancelled. They are never dropped silently.
+   */
+  async function confirmLeave(): Promise<boolean> {
+    if (!dirty) return true;
+    const name = profiles?.list.find((p) => p.id === editingId)?.name ?? "this profile";
+    if (!window.confirm(`Save your changes to "${name}" first?\n\nOK saves them. Cancel stays on "${name}".`)) {
+      return false;
+    }
+    return save();
+  }
+
+  async function run(action: () => Promise<void>, failure: string) {
+    try {
+      await action();
+    } catch {
+      showToast("error", failure);
+    }
+  }
+
+  async function onPickProfile(id: string) {
+    if (id === editingId || !(await confirmLeave())) return;
+    await run(() => load(id), "Could not open that profile. Reload the page and try again.");
+  }
+
+  async function onNewProfile() {
+    const name = window.prompt("Name of the new profile, for example “Backend – EN”:")?.trim();
+    if (!name || !(await confirmLeave())) return;
+    await run(async () => {
+      const created = await profileStore.createProfile(name);
+      await load(created.id);
+      showToast("success", `Profile "${name}" created. Your name, email and phone are already in it.`);
+    }, "Could not create the profile. Try again.");
+  }
+
+  async function onDuplicateProfile() {
+    const current = profiles?.list.find((p) => p.id === editingId);
+    if (!current || !(await confirmLeave())) return;
+    const name = window.prompt("Name of the copy:", `${current.name} copy`)?.trim();
+    if (!name) return;
+    await run(async () => {
+      const created = await profileStore.createProfile(name, current.id);
+      await load(created.id);
+      showToast("success", `Copied "${current.name}" to "${name}", CV included`);
+    }, "Could not copy the profile. Try again.");
+  }
+
+  async function onRenameProfile() {
+    const current = profiles?.list.find((p) => p.id === editingId);
+    if (!current) return;
+    const name = window.prompt("New name:", current.name)?.trim();
+    if (!name || name === current.name) return;
+    await run(async () => {
+      await profileStore.renameProfile(current.id, name);
+      setProfiles(await profileStore.getProfiles());
+    }, "Could not rename the profile. Try again.");
+  }
+
+  async function onDeleteProfile() {
+    const current = profiles?.list.find((p) => p.id === editingId);
+    if (!current || (profiles?.list.length ?? 0) < 2) return;
+    const message = `Delete the profile "${current.name}"?\n\nIts CV, salary, preferences, links and location are removed, including unsaved changes. Your name, email, phone and saved answers stay.`;
+    if (!window.confirm(message)) return;
+    await run(async () => {
+      const next = await profileStore.deleteProfile(current.id);
+      await load(next.activeId);
+      showToast("success", `Profile "${current.name}" deleted`);
+    }, "Could not delete the profile. Try again.");
+  }
+
+  async function onUseForFilling() {
+    await run(async () => {
+      await profileStore.setActive(editingId);
+      setProfiles(await profileStore.getProfiles());
+    }, "Could not switch the profile used for filling. Try again.");
+  }
+
+  if (!profile || !profiles) {
+    return <main>{loadFailed ? "Could not load your profile. Reload the page to try again." : "Loading…"}</main>;
+  }
+
+  const fillingId = activeProfile(profiles)?.id;
 
   return (
     <main>
@@ -132,22 +267,87 @@ export function App() {
         Saved only in this browser. Click the extension icon on a job application form to fill it. Anything left
         empty here, or without an exact match on the form, is left for you to fill.
       </p>
+      <section className="profile-bar" aria-label="Candidate profiles">
+        <label>
+          <span>Editing profile</span>
+          <select value={editingId} onChange={(e) => void onPickProfile(e.target.value)} disabled={saving}>
+            {profiles.list.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.id === fillingId ? `${p.name} (used for filling)` : p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="profile-actions">
+          {editingId === fillingId ? (
+            <span className="filling-badge">Used for filling</span>
+          ) : (
+            <button type="button" className="primary" onClick={() => void onUseForFilling()} disabled={saving}>
+              Use for filling
+            </button>
+          )}
+          <button type="button" className="secondary" onClick={() => void onNewProfile()} disabled={saving}>
+            New
+          </button>
+          <button type="button" className="secondary" onClick={() => void onDuplicateProfile()} disabled={saving}>
+            Duplicate
+          </button>
+          <button type="button" className="secondary" onClick={() => void onRenameProfile()} disabled={saving}>
+            Rename
+          </button>
+          <button
+            type="button"
+            className="secondary danger"
+            onClick={() => void onDeleteProfile()}
+            disabled={saving || profiles.list.length < 2}
+            title={profiles.list.length < 2 ? "The last profile cannot be deleted" : undefined}
+          >
+            Delete
+          </button>
+        </div>
+        <p className="hint">
+          Each profile has its own CV, city, region, preferences and salary, and can use its own country. Name,
+          contact details, links, languages and the default country are shared. Switch the profile used for filling
+          from the extension icon's right-click menu, or with Alt+Shift+P.
+        </p>
+      </section>
       <form onSubmit={onSubmit}>
         <div className="sections">
           <div className="column">
             <fieldset>
               <legend>Personal details</legend>
-              {TEXT_FIELDS.map(({ id, label, inputType }) => (
+              <p className="hint">Shared by all profiles.</p>
+              {TEXT_FIELDS.filter(({ id }) => isGlobalKey(id)).map(({ id, label, inputType }) => (
+                <label key={id}>
+                  <span>{id === "country" ? "Country (default)" : label}</span>
+                  <input type={inputType} value={getText(profile, id)} onChange={(e) => update(id, e.target.value)} />
+                </label>
+              ))}
+            </fieldset>
+            <fieldset>
+              <legend>Location</legend>
+              <p className="hint">For this profile.</p>
+              {TEXT_FIELDS.filter(({ id }) => !isGlobalKey(id)).map(({ id, label, inputType }) => (
                 <label key={id}>
                   <span>{label}</span>
                   <input type={inputType} value={getText(profile, id)} onChange={(e) => update(id, e.target.value)} />
                 </label>
               ))}
+              <label>
+                <span>Country for this profile</span>
+                <input
+                  type="text"
+                  placeholder={getText(profile, "country") ? `Default: ${getText(profile, "country")}` : "Uses the default"}
+                  value={getText(profile, PROFILE_COUNTRY)}
+                  onChange={(e) => update(PROFILE_COUNTRY, e.target.value)}
+                />
+              </label>
+              <p className="hint">Leave empty to use the default country.</p>
             </fieldset>
           </div>
 
           <div className="column">
-            <CvSection showToast={showToast} />
+            <CvSection key={editingId} profileId={editingId} showToast={showToast} />
 
             <fieldset>
               <legend>Preferences</legend>
@@ -159,13 +359,26 @@ export function App() {
                   onChange={(v) => update(field.id, v)}
                 />
               ))}
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={getText(profile, CONSENT_SETTING) === "yes"}
+                  onChange={(e) => update(CONSENT_SETTING, e.target.checked ? "yes" : "")}
+                />
+                Tick required consent and terms boxes
+              </label>
+              <p className="hint">
+                Only boxes the form marks as required: data processing, privacy policy, terms or regulamin. Marketing,
+                newsletter, talent-pool and future-recruitment boxes are never ticked. This setting is shared by all
+                profiles.
+              </p>
             </fieldset>
           </div>
 
           {/* Three short fields side by side, so Links stays one row tall. */}
           <fieldset className="links-row">
             <legend>Links</legend>
-            <p className="hint">Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
+            <p className="hint">Shared by all profiles. Filled into fields that ask for your LinkedIn, GitHub, or portfolio.</p>
             <div className="link-fields">
               {LINK_FIELDS.map(({ id, label, placeholder }) => (
                 <label key={id}>
@@ -246,6 +459,7 @@ function LanguagesSection({
   return (
     <fieldset>
       <legend>Languages</legend>
+      <p className="hint">Shared by all profiles.</p>
       <p className="hint">Used when a form asks for your level in a specific language.</p>
       {languages.length === 0 && <p className="empty">No languages added yet.</p>}
       {languages.map((row, index) => (
@@ -339,12 +553,12 @@ function ChoiceInput({
   );
 }
 
-function CvSection({ showToast }: { showToast: ShowToast }) {
+function CvSection({ profileId, showToast }: { profileId: string; showToast: ShowToast }) {
   const [cv, setCv] = useState<StoredFile | null>(null);
 
   useEffect(() => {
-    profileStore.getCv().then(setCv, () => showToast("error", "Could not load your CV."));
-  }, [showToast]);
+    profileStore.getCv(profileId).then(setCv, () => showToast("error", "Could not load the CV of this profile."));
+  }, [profileId, showToast]);
 
   async function onPick(e: ChangeEvent<HTMLInputElement>) {
     const input = e.target;
@@ -357,7 +571,7 @@ function CvSection({ showToast }: { showToast: ShowToast }) {
     }
     try {
       const stored = await fileToStored(file);
-      await profileStore.saveCv(stored);
+      await profileStore.saveCv(stored, profileId);
       setCv(stored);
       showToast("success", `CV saved: ${stored.name}`);
     } catch {
@@ -366,7 +580,7 @@ function CvSection({ showToast }: { showToast: ShowToast }) {
   }
 
   async function onRemove() {
-    await profileStore.removeCv();
+    await profileStore.removeCv(profileId);
     setCv(null);
     showToast("success", "CV removed");
   }
@@ -374,7 +588,9 @@ function CvSection({ showToast }: { showToast: ShowToast }) {
   return (
     <fieldset>
       <legend>CV</legend>
-      <p className="hint">Uploaded to file fields that ask for a CV or resume. Saved as soon as you pick it.</p>
+      <p className="hint">
+        Uploaded to file fields that ask for a CV or resume. Each profile has its own. Saved as soon as you pick it.
+      </p>
       {cv && (
         <div className="file-card">
           <span className="file-badge">{cv.name.split(".").pop()?.toUpperCase()}</span>

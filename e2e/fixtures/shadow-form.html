@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8"><title>Shadow DOM form</title></head>
+  <body>
+    <apply-form></apply-form>
+    <script>
+      customElements.define(
+        "apply-form",
+        class extends HTMLElement {
+          connectedCallback() {
+            const root = this.attachShadow({ mode: "open" });
+            root.innerHTML = `
+              <label for="first">First name</label><input id="first">
+              <label for="last">Last name</label><input id="last">
+              <label for="mail">Email</label><input id="mail" type="email" value="kept@example.com">`;
+            // Marks an input whose input event crossed the shadow boundary.
+            document.addEventListener("input", (e) => {
+              const target = e.composedPath()[0];
+              if (target instanceof HTMLElement) target.dataset.seen = "yes";
+            });
+          }
+        },
+      );
+    </script>
+  </body>
+</html>
