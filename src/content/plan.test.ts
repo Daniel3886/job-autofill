@@ -294,9 +294,25 @@ describe("province and country dropdowns", () => {
     expect($<HTMLSelectElement>("#k").value).toBe("PL");
   });
 
-  it("leaves the dropdown alone when no option has the saved name", async () => {
-    await fill(PLACES, { version: 1, values: { region: "Mazovia", country: "Poland" } });
+  it("leaves a province dropdown alone when no option has the saved name", async () => {
+    await fill(PLACES, { version: 1, values: { region: "Mazovia", country: "Atlantis" } });
     expect($<HTMLSelectElement>("#w").value).toBe("");
+    expect($<HTMLSelectElement>("#k").value).toBe("");
+  });
+
+  it("finds the saved country under its name in the form's language", async () => {
+    await fill(PLACES, { version: 1, values: { country: "Poland" } });
+    expect($<HTMLSelectElement>("#k").value).toBe("PL");
+    await fill(PLACES, { version: 1, values: { country: "Deutschland" } });
+    expect($<HTMLSelectElement>("#k").value).toBe("DE");
+  });
+
+  it("leaves the country alone when two options name the same country", async () => {
+    await fill(
+      `<label for="k">Country</label>
+      <select id="k"><option value="">--</option><option value="1">Polska</option><option value="2">Poland</option></select>`,
+      { version: 1, values: { country: "Polen" } },
+    );
     expect($<HTMLSelectElement>("#k").value).toBe("");
   });
 

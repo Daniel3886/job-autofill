@@ -124,7 +124,7 @@ function choose(t: Exclude<FieldTarget, { kind: "answer" }>, options: ChoiceOpti
     return level ? chooseChoiceOptions(LANGUAGE_LEVEL_RULE, [level], options, multiple) : null;
   }
   if (isPlaceField(t.fieldId)) {
-    const option = matchPlaceOption(getText(profile, t.fieldId), options);
+    const option = matchPlaceOption(getText(profile, t.fieldId), options, t.fieldId);
     return option ? [option.value] : null;
   }
   const rule = CHOICE_RULE_BY_ID.get(t.fieldId);
