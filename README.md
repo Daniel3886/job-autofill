@@ -26,8 +26,6 @@ A choice is filled only when exactly one option on the page matches your answer.
 
 - **Lever "Current location"**: a search box that keeps only a value picked from its results. The extension types your city (or the answer you saved for that question), waits for the results, and picks the one named like it. When several places share the name, such as Warsaw in Poland and in Indiana, your saved country decides. The field picker's **Save and fill** does the same on this box. Lever reads an attached CV and writes what it finds into every field nobody has typed in, so the extension waits for that to finish before it fills the location (the panel says so while it waits). A location the CV filled is left as it is.
 
-Not supported yet: drag-and-drop-only upload zones, iframes, closed shadow roots, and yes/no skill questions.
-
 ## How it works
 
 ![Saving a profile on the options page, then filling a job application form with one click](docs/demo-dark.gif)
