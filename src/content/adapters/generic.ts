@@ -2,12 +2,13 @@ import { classifyQuestion } from "../choices/choiceRules";
 import { classifyPlaceQuestion } from "../choices/places";
 import { collectRadioGroups } from "../drivers/radio";
 import { isSelectized } from "../drivers/select";
-import { collectTextInputs, isVisible } from "../drivers/text";
+import { collectTextInputs } from "../drivers/text";
 import { FIELD_RULES } from "../fieldRules";
 import { matchInputs } from "../matcher";
 import { isCvQuestion } from "../fileRules";
 import { questionText } from "../signals";
 import { normalize } from "../text";
+import { isHiddenByMarkup, isHoneypot, isPersonFacing } from "../visibility";
 import type { FieldTarget, VendorAdapter } from "./types";
 
 export const genericAdapter: VendorAdapter = {
@@ -28,7 +29,7 @@ export const genericAdapter: VendorAdapter = {
 
     for (const select of doc.querySelectorAll("select")) {
       if (ctx.claimed.has(select) || select.disabled) continue;
-      if (ctx.checkVisibility && !isSelectized(select) && !isVisible(select)) continue;
+      if (!isPersonFacing(select, ctx.checkVisibility && !isSelectized(select))) continue;
       const question = questionText(select);
       const fieldId = classifyQuestion(question) ?? classifyPlaceQuestion(question);
       if (fieldId && !ctx.claimedFields.has(fieldId)) {
@@ -46,6 +47,8 @@ export const genericAdapter: VendorAdapter = {
     if (!ctx.claimedFields.has("cv")) {
       for (const input of doc.querySelectorAll<HTMLInputElement>('input[type="file"]')) {
         if (ctx.claimed.has(input) || input.disabled || (input.files?.length ?? 0) > 0) continue;
+        // Upload inputs are usually styled away behind a button, so only markup can hide them.
+        if (isHoneypot(input) || isHiddenByMarkup(input)) continue;
         const question = questionText(input);
         const attrs = normalize(`${input.name} ${input.id}`);
         if (isCvQuestion(question) || (!question && isCvQuestion(attrs))) {

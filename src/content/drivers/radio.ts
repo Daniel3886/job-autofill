@@ -1,5 +1,6 @@
 import { findNearbyText } from "../signals";
 import { normalize } from "../text";
+import { isHiddenByMarkup, isHoneypot } from "../visibility";
 
 export interface RadioGroup {
   name: string;
@@ -10,7 +11,8 @@ export interface RadioGroup {
 export function collectRadioGroups(root: ParentNode, exclude: Set<Element> = new Set()): RadioGroup[] {
   const byName = new Map<string, HTMLInputElement[]>();
   for (const r of root.querySelectorAll<HTMLInputElement>('input[type="radio"]')) {
-    if (exclude.has(r) || !r.name || r.disabled) continue;
+    // Styled radios hide the native input, so only markup and honeypot names rule one out.
+    if (exclude.has(r) || !r.name || r.disabled || isHoneypot(r) || isHiddenByMarkup(r)) continue;
     const list = byName.get(r.name) ?? [];
     list.push(r);
     byName.set(r.name, list);

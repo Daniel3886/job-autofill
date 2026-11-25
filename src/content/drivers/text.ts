@@ -1,4 +1,5 @@
 import type { TextLike } from "../signals";
+import { isPersonFacing } from "../visibility";
 
 const FILLABLE_TYPES = new Set(["text", "email", "tel", "url", "number", "search", ""]);
 
@@ -11,7 +12,7 @@ export function isTextLike(el: unknown): el is TextLike {
 
 export function isFillableText(el: TextLike, checkVisibility: boolean): boolean {
   if (!isTextLike(el) || el.value !== "") return false;
-  return !checkVisibility || isVisible(el);
+  return isPersonFacing(el, checkVisibility);
 }
 
 export function collectTextInputs(
@@ -22,12 +23,6 @@ export function collectTextInputs(
   return [...root.querySelectorAll<TextLike>("input, textarea")].filter(
     (el) => !exclude.has(el) && !el.closest(".selectize-control") && isFillableText(el, checkVisibility),
   );
-}
-
-export function isVisible(el: HTMLElement): boolean {
-  if (el.getClientRects().length === 0) return false;
-  const style = getComputedStyle(el);
-  return style.visibility !== "hidden" && style.display !== "none";
 }
 
 export function setTextValue(el: TextLike, value: string): void {
